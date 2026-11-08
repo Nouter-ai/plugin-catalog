@@ -1,0 +1,8 @@
+{
+  "name": "delivery-salesforce",
+  "version": "1.0.0",
+  "description": "Delivery for Salesforce, Nouter's delivery line: the Delivery order process template and the skills the agent uses at each stage (understand, propose, build and verify).",
+  "author": { "name": "Nouter" },
+  "license": "Apache-2.0",
+  "keywords": ["salesforce", "delivery", "apex", "process"]
+}

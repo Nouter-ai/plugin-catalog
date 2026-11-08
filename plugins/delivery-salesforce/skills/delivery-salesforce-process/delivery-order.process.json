@@ -1,0 +1,201 @@
+{
+  "schemaVersion": 1,
+  "id": "delivery-order",
+  "version": "1.0.0",
+  "effortUnit": "hours",
+  "stages": [
+    {
+      "id": "understand",
+      "kind": "chat-agent",
+      "scope": "order",
+      "goal": "Understand the request: what is asked, for whom, and what exists today in the repo and the org.",
+      "input": "The request as written in the chat, and its attachments.",
+      "deliverable": "understanding",
+      "check": "understanding-confirmed",
+      "prompt": "Follow the delivery-salesforce-understand skill. The stage ends when the requester confirms your summary in the chat.",
+      "skills": [
+        "nouter/delivery-salesforce-understand"
+      ],
+      "tools": [
+        "chat",
+        "vm-readonly",
+        "salesforce-read"
+      ],
+      "limits": {
+        "attempts": 3,
+        "timeoutMinutes": 120
+      },
+      "onFail": {},
+      "version": "1"
+    },
+    {
+      "id": "propose",
+      "kind": "chat-agent",
+      "scope": "order",
+      "goal": "Propose the work as stories that can be proven done by a machine, with a design, executable criteria and an estimate each.",
+      "input": "The confirmed understanding.",
+      "deliverable": "proposal",
+      "check": "proposal-valid",
+      "prompt": "Follow the delivery-salesforce-propose and delivery-salesforce-process skills, until the proposal has no errors.",
+      "skills": [
+        "nouter/delivery-salesforce-propose",
+        "nouter/delivery-salesforce-process"
+      ],
+      "tools": [
+        "chat",
+        "vm-readonly",
+        "salesforce-read",
+        "gadget"
+      ],
+      "limits": {
+        "attempts": 3,
+        "timeoutMinutes": 120
+      },
+      "onFail": {},
+      "version": "1"
+    },
+    {
+      "id": "approve-proposal",
+      "kind": "signature",
+      "scope": "order",
+      "goal": "People sign the proposal: the scope, and the solution when a story is high risk.",
+      "input": "The proposal.",
+      "deliverable": "proposal",
+      "check": "signed",
+      "skills": [],
+      "tools": [
+        "gadget"
+      ],
+      "limits": {
+        "attempts": 1
+      },
+      "onFail": {
+        "returnTo": "propose"
+      },
+      "version": "1"
+    },
+    {
+      "id": "build",
+      "kind": "spawned-agent",
+      "scope": "story",
+      "goal": "Build one story in the disposable VM: code, tests, and the metadata, deployed and tested in a scratch org.",
+      "input": "The signed story and the repository.",
+      "deliverable": "pull-request",
+      "check": "build-green",
+      "prompt": "Follow the delivery-salesforce-build skill. Build the story in /workspace until its tests pass in the scratch org, stage your work with git add and hand it in with result.deliver().",
+      "skills": [
+        "nouter/delivery-salesforce-build",
+        "nouter/delivery-salesforce-traps",
+        "salesforce/platform-custom-field-generate",
+        "salesforce/platform-validation-rule-generate",
+        "salesforce/platform-permission-set-generate"
+      ],
+      "tools": [
+        "vm",
+        "scratch-org",
+        "gadget"
+      ],
+      "spawner": "BUILD_AGENT",
+      "freshContext": true,
+      "model": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "limits": {
+        "attempts": 3,
+        "timeoutMinutes": 90
+      },
+      "onFail": {},
+      "version": "1"
+    },
+    {
+      "id": "verify",
+      "kind": "spawned-agent",
+      "scope": "story",
+      "goal": "Verify the story with a different agent and a clean context: evidence for each criterion.",
+      "input": "The pull request and the story's criteria.",
+      "deliverable": "verification-report",
+      "check": "criteria-pass",
+      "prompt": "Follow the delivery-salesforce-verify skill and hand in the report with result.deliver().",
+      "skills": [
+        "nouter/delivery-salesforce-verify",
+        "nouter/delivery-salesforce-traps"
+      ],
+      "tools": [
+        "vm",
+        "scratch-org",
+        "gadget"
+      ],
+      "spawner": "VERIFY_AGENT",
+      "freshContext": true,
+      "model": "deepseek-ai/DeepSeek-V4.1-Flash",
+      "limits": {
+        "attempts": 1,
+        "timeoutMinutes": 60
+      },
+      "onFail": {
+        "returnTo": "build",
+        "maxReturns": 2
+      },
+      "version": "1"
+    },
+    {
+      "id": "accept",
+      "kind": "signature",
+      "scope": "story",
+      "goal": "The requester accepts the story, which in continuous mode also authorises its deployment.",
+      "input": "The verification report and the pull request.",
+      "deliverable": "acceptance",
+      "check": "signed",
+      "skills": [],
+      "tools": [
+        "gadget"
+      ],
+      "limits": {
+        "attempts": 1
+      },
+      "onFail": {
+        "returnTo": "build"
+      },
+      "version": "1"
+    },
+    {
+      "id": "deploy",
+      "kind": "pipeline",
+      "scope": "story",
+      "goal": "Merge the pull request and deploy the story to the target org. No agent takes part.",
+      "input": "The accepted story.",
+      "deliverable": "deployment",
+      "check": "smoke-green",
+      "skills": [],
+      "tools": [],
+      "pipeline": "deploy-continuous",
+      "limits": {
+        "attempts": 2,
+        "timeoutMinutes": 60
+      },
+      "onFail": {},
+      "version": "1"
+    }
+  ],
+  "signatures": [
+    {
+      "id": "scope",
+      "stage": "approve-proposal",
+      "role": "requester",
+      "label": "Scope"
+    },
+    {
+      "id": "solution",
+      "stage": "approve-proposal",
+      "role": "project-admin",
+      "label": "Solution",
+      "optional": {
+        "when": "risk-high"
+      }
+    },
+    {
+      "id": "acceptance",
+      "stage": "accept",
+      "role": "requester",
+      "label": "Acceptance"
+    }
+  ]
+}
