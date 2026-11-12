@@ -1,1 +1,0 @@
-{ "mcpServers": { "hubspot": { "type": "http", "url": "https://mcp.hubspot.com/anthropic" }, "benchling": { "type": "http", "url": "" }, "local": { "type": "stdio", "command": "x" } } }

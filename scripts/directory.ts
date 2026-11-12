@@ -91,9 +91,28 @@ async function sources(root: string): Promise<{ plugins: Record<string, unknown>
   return { plugins: (isObj(m) && Array.isArray(m.plugins) ? m.plugins : []) as Record<string, unknown>[], items: (typeof items === "string" ? [] : items) as Item[] };
 }
 
+// El OS copia todo archivo de la rama y toma como plugin cualquier carpeta con .claude-plugin/plugin.json y como skill cualquier SKILL.md:
+// fuera de plugins/ y skills/ no puede haber ninguno (un fixture de test, un ejemplo en docs/ llegarían a cada tenant).
+export async function strayErrors(root: string): Promise<string[]> {
+  const errors: string[] = [];
+  const walk = async (rel: string): Promise<void> => {
+    for (const e of await readdir(join(root, rel), { withFileTypes: true })) {
+      const r = rel ? `${rel}/${e.name}` : e.name;
+      if (e.isDirectory()) {
+        if (!rel && [".git", "node_modules", "dist", "plugins", "skills"].includes(e.name)) continue;
+        await walk(r);
+      } else if (e.name === "SKILL.md" || (e.name === "plugin.json" && rel.endsWith(".claude-plugin"))) {
+        errors.push(`${r}: un ${e.name} fuera de plugins/ y skills/ llegaría a cada tenant como ${e.name === "SKILL.md" ? "skill" : "plugin"} del Directory`);
+      }
+    }
+  };
+  await walk("");
+  return errors;
+}
+
 // Todo lo que el CI exige del repo: el marketplace, los items sueltos y los destacados.
 export async function validateRepo(root: string): Promise<string[]> {
-  const errors = [...await marketplaceErrors(root), ...await directoryItemsErrors(root)];
+  const errors = [...await marketplaceErrors(root), ...await directoryItemsErrors(root), ...await strayErrors(root)];
   const { plugins, items } = await sources(root);
   const ids = new Map<string, true>([...plugins.map((p) => [`plugin:${String(p.name)}`, true] as const), ...items.map((i) => [`${i.type}:${i.name}`, true] as const)]);
   return [...errors, ...await featuredErrors(root, ids)];

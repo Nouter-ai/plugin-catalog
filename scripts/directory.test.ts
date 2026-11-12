@@ -89,3 +89,15 @@ test("el repo real vale, y los dos workflows existen", async () => {
   assert.match(rel, /release\/\$\{GITHUB_REF_NAME\}/);
   assert.match(rel, /contents: write/);
 });
+
+test("no puede haber plugin.json ni SKILL.md fuera de plugins/ y skills/: el OS tomaría cualquier carpeta de la rama como un plugin o una skill", async () => {
+  assert.deepEqual((await validateRepo(realRoot)).filter((e) => /fuera de plugins/.test(e)), []);
+  const root = await baseRepo();
+  await mkdir(join(root, "scripts/__fixtures__/x/.claude-plugin"), { recursive: true });
+  await writeFile(join(root, "scripts/__fixtures__/x/.claude-plugin/plugin.json"), "{}");
+  await mkdir(join(root, "docs/y"), { recursive: true });
+  await writeFile(join(root, "docs/y/SKILL.md"), "x");
+  const errors = (await validateRepo(root)).join(" | ");
+  assert.match(errors, /scripts\/__fixtures__\/x.*fuera de plugins/);
+  assert.match(errors, /docs\/y.*fuera de plugins/);
+});

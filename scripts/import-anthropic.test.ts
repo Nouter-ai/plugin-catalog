@@ -6,9 +6,8 @@ import { CATEGORIES } from "./categories.ts";
 import { validateRepo } from "./directory.ts";
 import { parseFrontmatter } from "./frontmatter.ts";
 import { EXCLUDED, importAnthropic, PLUGINS, SKILLS } from "./import-anthropic.ts";
-import { baseRepo } from "./test-util.ts";
+import { anthropicFixtures, baseRepo } from "./test-util.ts";
 
-const fx = (p: string) => new URL(`./__fixtures__/${p}`, import.meta.url).pathname;
 const json = async (p: string) => JSON.parse(await readFile(p, "utf8"));
 
 test("parseFrontmatter lee los tres formatos reales: >, |- y una línea (con y sin comillas)", () => {
@@ -49,14 +48,15 @@ const destino = baseRepo;
 
 test("importAnthropic copia lo libre, completa la licencia, omite lo que no la trae y conserva lo propio", async () => {
   const out = await destino();
-  const n = await importAnthropic({ kwp: fx("kwp"), skills: fx("skills"), out, commits: COMMITS, tables: TABLAS });
+  const fx = await anthropicFixtures();
+  const n = await importAnthropic({ kwp: fx.kwp, skills: fx.skills, out, commits: COMMITS, tables: TABLAS });
   assert.equal(n, 3, "2 plugins (local, solo stdio, no) y la skill con licencia; beta no trae LICENSE.txt");
   // Copia tal cual, y a engineering (sin LICENSE) le pone la del root.
   // El .mcp.json queda salvo los servidores stdio: los http (con URL o vacía) no se tocan, y un plugin con solo stdio no se importa.
   assert.deepEqual(Object.keys((await json(join(out, "plugins/sales/.mcp.json"))).mcpServers), ["hubspot", "benchling"]);
 
   assert.ok((await stat(join(out, "plugins/sales/skills/forecast/SKILL.md"))).isFile());
-  assert.equal(await readFile(join(out, "plugins/engineering/LICENSE"), "utf8"), await readFile(fx("kwp/LICENSE"), "utf8"));
+  assert.equal(await readFile(join(out, "plugins/engineering/LICENSE"), "utf8"), await readFile(join(fx.kwp, "LICENSE"), "utf8"));
   await assert.rejects(stat(join(out, "skills/beta")));
   assert.ok((await stat(join(out, "skills/alpha/LICENSE.txt"))).isFile());
   // El marketplace: lo propio sigue y cada entrada lleva su origen y sus datos.
@@ -77,7 +77,8 @@ test("importAnthropic copia lo libre, completa la licencia, omite lo que no la t
 
 test("correrlo dos veces no duplica nada", async () => {
   const out = await destino();
-  const opts = { kwp: fx("kwp"), skills: fx("skills"), out, commits: COMMITS, tables: TABLAS };
+  const fx = await anthropicFixtures();
+  const opts = { kwp: fx.kwp, skills: fx.skills, out, commits: COMMITS, tables: TABLAS };
   await importAnthropic(opts);
   const leer = async () => [await readFile(join(out, ".claude-plugin/marketplace.json"), "utf8"), await readFile(join(out, ".nouter/directory.json"), "utf8")];
   const antes = await leer();
@@ -87,7 +88,8 @@ test("correrlo dos veces no duplica nada", async () => {
 
 test("un plugin de la tabla que el repo de origen no tiene corta la importación", async () => {
   const out = await destino();
-  await assert.rejects(importAnthropic({ kwp: fx("kwp"), skills: fx("skills"), out, commits: COMMITS,
+  const fx = await anthropicFixtures();
+  await assert.rejects(importAnthropic({ kwp: fx.kwp, skills: fx.skills, out, commits: COMMITS,
     tables: { plugins: [{ name: "nada", category: "sales", tags: [] }], skills: [] } }), /nada/);
 });
 
