@@ -1,0 +1,12 @@
+{
+  "name": "plugin-catalog",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24.19.0" },
+  "scripts": {
+    "test": "node --test 'scripts/*.test.ts'",
+    "validate": "node scripts/validate.ts",
+    "build": "node scripts/build.ts",
+    "import:anthropic": "node scripts/import-anthropic.ts"
+  }
+}

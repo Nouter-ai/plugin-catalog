@@ -16,11 +16,372 @@
         "apex",
         "process"
       ],
-      "category": "delivery",
+      "category": "sales",
       "author": {
         "name": "Nouter"
       },
-      "treeHash": "5c7d43a0ef4d45e7957e8b83d43ecc7e95a86f5c95ac863661eb4ca421df4925"
+      "treeHash": "5c7d43a0ef4d45e7957e8b83d43ecc7e95a86f5c95ac863661eb4ca421df4925",
+      "tags": [
+        "engineering",
+        "automation-workflows"
+      ],
+      "x-nouter": {
+        "verified": true,
+        "flag": "salesforce-delivery",
+        "tagline": "Nouter's delivery line for Salesforce, from understanding to verified work"
+      }
+    },
+    {
+      "name": "productivity",
+      "displayName": "Productivity",
+      "source": "./plugins/productivity",
+      "description": "Manage tasks, plan your day, and build up memory of important context about your work. Syncs with your calendar, email, and chat to keep everything organized and on track.",
+      "version": "1.3.1",
+      "license": "Apache-2.0",
+      "category": "tickets-tasks",
+      "tags": [
+        "automation-workflows",
+        "notes-memory"
+      ],
+      "author": {
+        "name": "Anthropic"
+      },
+      "x-nouter": {
+        "verified": true,
+        "tagline": "Plan your day, track tasks and keep context about your work",
+        "source": {
+          "repo": "anthropics/knowledge-work-plugins",
+          "commit": "877a617b435ee2edfb002d9a3703c0a1a03aa1ba"
+        }
+      }
+    },
+    {
+      "name": "enterprise-search",
+      "displayName": "Enterprise Search",
+      "source": "./plugins/enterprise-search",
+      "description": "Search across all of your company's tools in one place. Find anything across email, chat, documents, and wikis without switching between apps.",
+      "version": "1.3.0",
+      "license": "Apache-2.0",
+      "category": "reference-docs",
+      "tags": [
+        "notes-memory",
+        "files-documents"
+      ],
+      "author": {
+        "name": "Anthropic"
+      },
+      "x-nouter": {
+        "verified": true,
+        "tagline": "Search your company's email, chat, docs and wikis in one place",
+        "source": {
+          "repo": "anthropics/knowledge-work-plugins",
+          "commit": "877a617b435ee2edfb002d9a3703c0a1a03aa1ba"
+        }
+      }
+    },
+    {
+      "name": "sales",
+      "displayName": "Sales",
+      "source": "./plugins/sales",
+      "description": "Sales skills that work with the tools your team already uses - your CRM, email, calendar, chat and call recorder - or with uploaded files. Prep calls, summarize and follow up, research accounts, review deals and pipeline, and write the forecast. When you ask, it can update CRM records, create email drafts or send email, post to chat and book meetings through your connected tools.",
+      "version": "2.1.0",
+      "license": "Apache-2.0",
+      "category": "sales",
+      "tags": [
+        "contacts-leads",
+        "marketing"
+      ],
+      "author": {
+        "name": "Anthropic"
+      },
+      "x-nouter": {
+        "verified": true,
+        "tagline": "Prep calls, research accounts and keep your pipeline moving",
+        "source": {
+          "repo": "anthropics/knowledge-work-plugins",
+          "commit": "877a617b435ee2edfb002d9a3703c0a1a03aa1ba"
+        }
+      }
+    },
+    {
+      "name": "finance",
+      "displayName": "Finance",
+      "source": "./plugins/finance",
+      "description": "Streamline finance and accounting workflows, from journal entries and reconciliation to financial statements and variance analysis. Speed up audit prep, month-end close, and keeping your books clean.",
+      "version": "1.3.0",
+      "license": "Apache-2.0",
+      "category": "finance",
+      "tags": [
+        "databases"
+      ],
+      "author": {
+        "name": "Anthropic"
+      },
+      "x-nouter": {
+        "verified": true,
+        "tagline": "Journal entries, reconciliation, close and financial statements",
+        "source": {
+          "repo": "anthropics/knowledge-work-plugins",
+          "commit": "877a617b435ee2edfb002d9a3703c0a1a03aa1ba"
+        }
+      }
+    },
+    {
+      "name": "data",
+      "displayName": "Data",
+      "source": "./plugins/data",
+      "description": "Write SQL, explore datasets, and generate insights faster. Build visualizations and dashboards, and turn raw data into clear stories for stakeholders.",
+      "version": "1.1.0",
+      "license": "Apache-2.0",
+      "category": "databases",
+      "tags": [
+        "engineering"
+      ],
+      "author": {
+        "name": "Anthropic"
+      },
+      "x-nouter": {
+        "verified": true,
+        "tagline": "Write SQL, explore datasets and turn data into dashboards",
+        "source": {
+          "repo": "anthropics/knowledge-work-plugins",
+          "commit": "877a617b435ee2edfb002d9a3703c0a1a03aa1ba"
+        }
+      }
+    },
+    {
+      "name": "legal",
+      "displayName": "Legal",
+      "source": "./plugins/legal",
+      "description": "Speed up contract review, NDA triage, and compliance workflows for in-house legal teams. Draft legal briefs, organize precedent research, and manage institutional knowledge.",
+      "version": "1.3.0",
+      "license": "Apache-2.0",
+      "category": "legal",
+      "tags": [
+        "files-documents"
+      ],
+      "author": {
+        "name": "Anthropic"
+      },
+      "x-nouter": {
+        "verified": true,
+        "tagline": "Contract review, NDA triage and compliance for in-house teams",
+        "source": {
+          "repo": "anthropics/knowledge-work-plugins",
+          "commit": "877a617b435ee2edfb002d9a3703c0a1a03aa1ba"
+        }
+      }
+    },
+    {
+      "name": "marketing",
+      "displayName": "Marketing",
+      "source": "./plugins/marketing",
+      "description": "Create content, plan campaigns, and analyze performance across marketing channels. Maintain brand voice consistency, track competitors, and report on what's working.",
+      "version": "1.2.0",
+      "license": "Apache-2.0",
+      "category": "marketing",
+      "tags": [
+        "design-media",
+        "email-messages"
+      ],
+      "author": {
+        "name": "Anthropic"
+      },
+      "x-nouter": {
+        "verified": true,
+        "tagline": "Create content, plan campaigns and track performance",
+        "source": {
+          "repo": "anthropics/knowledge-work-plugins",
+          "commit": "877a617b435ee2edfb002d9a3703c0a1a03aa1ba"
+        }
+      }
+    },
+    {
+      "name": "customer-support",
+      "displayName": "Customer Support",
+      "source": "./plugins/customer-support",
+      "description": "Triage tickets, draft responses, escalate issues, and build your knowledge base. Research customer context and turn resolved issues into self-service content.",
+      "version": "1.3.0",
+      "license": "Apache-2.0",
+      "category": "tickets-tasks",
+      "tags": [
+        "email-messages"
+      ],
+      "author": {
+        "name": "Anthropic"
+      },
+      "x-nouter": {
+        "verified": true,
+        "tagline": "Triage tickets, draft replies and build your knowledge base",
+        "source": {
+          "repo": "anthropics/knowledge-work-plugins",
+          "commit": "877a617b435ee2edfb002d9a3703c0a1a03aa1ba"
+        }
+      }
+    },
+    {
+      "name": "product-management",
+      "displayName": "Product Management",
+      "source": "./plugins/product-management",
+      "description": "Write feature specs, plan roadmaps, and synthesize user research faster. Keep stakeholders updated and stay ahead of the competitive landscape.",
+      "version": "1.2.0",
+      "license": "Apache-2.0",
+      "category": "tickets-tasks",
+      "tags": [
+        "engineering",
+        "reference-docs"
+      ],
+      "author": {
+        "name": "Anthropic"
+      },
+      "x-nouter": {
+        "verified": true,
+        "tagline": "Write specs, plan roadmaps and synthesize user research",
+        "source": {
+          "repo": "anthropics/knowledge-work-plugins",
+          "commit": "877a617b435ee2edfb002d9a3703c0a1a03aa1ba"
+        }
+      }
+    },
+    {
+      "name": "bio-research",
+      "displayName": "Bio Research",
+      "source": "./plugins/bio-research",
+      "description": "Connect to preclinical research tools and databases (literature search, genomics analysis, target prioritization) to accelerate early-stage life sciences R&D",
+      "version": "1.2.0",
+      "license": "Apache-2.0",
+      "category": "reference-docs",
+      "tags": [
+        "databases"
+      ],
+      "author": {
+        "name": "Anthropic"
+      },
+      "x-nouter": {
+        "verified": true,
+        "tagline": "Search literature and databases for early-stage life sciences R&D",
+        "source": {
+          "repo": "anthropics/knowledge-work-plugins",
+          "commit": "877a617b435ee2edfb002d9a3703c0a1a03aa1ba"
+        }
+      }
+    },
+    {
+      "name": "engineering",
+      "displayName": "Engineering",
+      "source": "./plugins/engineering",
+      "description": "Streamline engineering workflows — standups, code review, architecture decisions, incident response, and technical documentation. Works with your existing tools or standalone.",
+      "version": "1.2.0",
+      "license": "Apache-2.0",
+      "category": "engineering",
+      "tags": [
+        "logs-errors",
+        "tickets-tasks"
+      ],
+      "author": {
+        "name": "Anthropic"
+      },
+      "x-nouter": {
+        "verified": true,
+        "tagline": "Standups, code review, architecture decisions and incident response",
+        "source": {
+          "repo": "anthropics/knowledge-work-plugins",
+          "commit": "877a617b435ee2edfb002d9a3703c0a1a03aa1ba"
+        }
+      }
+    },
+    {
+      "name": "human-resources",
+      "displayName": "Human Resources",
+      "source": "./plugins/human-resources",
+      "description": "Streamline people operations — recruiting, onboarding, performance reviews, compensation analysis, and policy guidance. Maintain compliance and keep your team running smoothly.",
+      "version": "1.3.0",
+      "license": "Apache-2.0",
+      "category": "tickets-tasks",
+      "tags": [
+        "legal"
+      ],
+      "author": {
+        "name": "Anthropic"
+      },
+      "x-nouter": {
+        "verified": true,
+        "tagline": "Recruiting, onboarding, performance reviews and policy guidance",
+        "source": {
+          "repo": "anthropics/knowledge-work-plugins",
+          "commit": "877a617b435ee2edfb002d9a3703c0a1a03aa1ba"
+        }
+      }
+    },
+    {
+      "name": "design",
+      "displayName": "Design",
+      "source": "./plugins/design",
+      "description": "Accelerate design workflows — critique, design system management, UX writing, accessibility audits, research synthesis, and dev handoff. From exploration to pixel-perfect specs.",
+      "version": "1.2.0",
+      "license": "Apache-2.0",
+      "category": "design-media",
+      "tags": [
+        "engineering"
+      ],
+      "author": {
+        "name": "Anthropic"
+      },
+      "x-nouter": {
+        "verified": true,
+        "tagline": "Design critique, accessibility audits, UX writing and dev handoff",
+        "source": {
+          "repo": "anthropics/knowledge-work-plugins",
+          "commit": "877a617b435ee2edfb002d9a3703c0a1a03aa1ba"
+        }
+      }
+    },
+    {
+      "name": "operations",
+      "displayName": "Operations",
+      "source": "./plugins/operations",
+      "description": "Optimize business operations — vendor management, process documentation, change management, capacity planning, and compliance tracking. Keep your organization running efficiently.",
+      "version": "1.3.0",
+      "license": "Apache-2.0",
+      "category": "automation-workflows",
+      "tags": [
+        "tickets-tasks"
+      ],
+      "author": {
+        "name": "Anthropic"
+      },
+      "x-nouter": {
+        "verified": true,
+        "tagline": "Vendor management, process docs and capacity planning",
+        "source": {
+          "repo": "anthropics/knowledge-work-plugins",
+          "commit": "877a617b435ee2edfb002d9a3703c0a1a03aa1ba"
+        }
+      }
+    },
+    {
+      "name": "small-business",
+      "displayName": "Small Business",
+      "source": "./plugins/small-business",
+      "description": "Pre-built small business workflows to help you run and grow your business. Supports a majority of the tools you already use. You approve every step that touches money or customers. Install and then ask Claude to help you get onboarded.",
+      "version": "1.35.1",
+      "license": "Apache-2.0",
+      "category": "automation-workflows",
+      "tags": [
+        "finance",
+        "sales"
+      ],
+      "author": {
+        "name": "Anthropic"
+      },
+      "x-nouter": {
+        "verified": true,
+        "tagline": "Ready-made workflows to run and grow a small business",
+        "source": {
+          "repo": "anthropics/knowledge-work-plugins",
+          "commit": "877a617b435ee2edfb002d9a3703c0a1a03aa1ba"
+        }
+      }
     }
   ]
 }

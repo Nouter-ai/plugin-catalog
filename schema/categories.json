@@ -1,0 +1,76 @@
+{
+  "categories": [
+    {
+      "id": "automation-workflows",
+      "label": "Automation & workflows"
+    },
+    {
+      "id": "contacts-leads",
+      "label": "Contacts & leads"
+    },
+    {
+      "id": "databases",
+      "label": "Databases"
+    },
+    {
+      "id": "design-media",
+      "label": "Design & media"
+    },
+    {
+      "id": "email-messages",
+      "label": "Email & messages"
+    },
+    {
+      "id": "engineering",
+      "label": "Engineering"
+    },
+    {
+      "id": "events-tickets",
+      "label": "Events & tickets"
+    },
+    {
+      "id": "files-documents",
+      "label": "Files & documents"
+    },
+    {
+      "id": "finance",
+      "label": "Finance"
+    },
+    {
+      "id": "legal",
+      "label": "Legal"
+    },
+    {
+      "id": "logs-errors",
+      "label": "Logs & errors"
+    },
+    {
+      "id": "marketing",
+      "label": "Marketing"
+    },
+    {
+      "id": "notes-memory",
+      "label": "Notes & memory"
+    },
+    {
+      "id": "reference-docs",
+      "label": "Reference docs"
+    },
+    {
+      "id": "retail-ecommerce",
+      "label": "Retail & e-commerce"
+    },
+    {
+      "id": "sales",
+      "label": "Sales"
+    },
+    {
+      "id": "tickets-tasks",
+      "label": "Tickets & tasks"
+    },
+    {
+      "id": "websites",
+      "label": "Websites"
+    }
+  ]
+}
