@@ -16,11 +16,19 @@
         "apex",
         "process"
       ],
-      "category": "delivery",
+      "category": "sales",
       "author": {
         "name": "Nouter"
       },
-      "treeHash": "5c7d43a0ef4d45e7957e8b83d43ecc7e95a86f5c95ac863661eb4ca421df4925"
+      "treeHash": "5c7d43a0ef4d45e7957e8b83d43ecc7e95a86f5c95ac863661eb4ca421df4925",
+      "tags": [
+        "engineering",
+        "automation-workflows"
+      ],
+      "x-nouter": {
+        "verified": true,
+        "flag": "salesforce-delivery"
+      }
     }
   ]
 }

@@ -1,0 +1,28 @@
+name: release
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: write
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    steps:
+      # added de cada entrada sale del primer commit que la agregó: hace falta el historial completo.
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - run: npm test
+      - run: node scripts/validate.ts
+      - run: node scripts/build.ts "${GITHUB_REF_NAME}"
+      # El OS de cada tenant sincroniza ramas, no tags (el lector de git solo sigue ramas): cada release empuja su rama
+      # inmutable release/vN en el commit del tag. Si ya existe, el push falla y el release no sale.
+      - run: |
+          if git ls-remote --exit-code --heads origin "release/${GITHUB_REF_NAME}" >/dev/null; then
+            echo "release/${GITHUB_REF_NAME} ya existe: un release no se rehace, se sube la versión"; exit 1
+          fi
+          git push origin "HEAD:refs/heads/release/${GITHUB_REF_NAME}"
+      - run: gh release create "${GITHUB_REF_NAME}" dist/directory.json --title "${GITHUB_REF_NAME}" --notes "Directory de plugins y skills ${GITHUB_REF_NAME}"
+        env:
+          GH_TOKEN: ${{ github.token }}
