@@ -3,6 +3,7 @@
 // (skills y blueprints sueltos) y de .nouter/featured.json (el banner de Skills y de Plugins).
 
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -120,9 +121,30 @@ export async function strayErrors(root: string): Promise<string[]> {
   return errors;
 }
 
+// El OS deja una sola copia de un SKILL.md idéntico dentro de una colección: si dos plugins (o un plugin y una skill suelta)
+// traen el mismo, uno llegaría al tenant sin esa skill. Hasta que el OS deduplique por raíz de plugin, el CI no lo deja pasar.
+export async function duplicateSkillErrors(root: string): Promise<string[]> {
+  const raices = new Map<string, Set<string>>();
+  const walk = async (rel: string, raiz: string): Promise<void> => {
+    let entries;
+    try { entries = await readdir(join(root, rel), { withFileTypes: true }); } catch { return; }
+    for (const e of entries) {
+      const r = `${rel}/${e.name}`;
+      if (e.isDirectory()) await walk(r, raiz || r);
+      else if (e.name === "SKILL.md") {
+        const hash = createHash("sha256").update(await readFile(join(root, r))).digest("hex");
+        raices.set(hash, (raices.get(hash) ?? new Set()).add(raiz));
+      }
+    }
+  };
+  await walk("plugins", ""); await walk("skills", "");
+  return [...raices.values()].filter((s) => s.size > 1)
+    .map((s) => `${[...s].toSorted().join(" y ")}: traen un SKILL.md idéntico; el OS guarda una sola copia y uno llegaría sin esa skill`);
+}
+
 // Todo lo que el CI exige del repo: el marketplace, los items sueltos y los destacados.
 export async function validateRepo(root: string): Promise<string[]> {
-  const errors = [...await marketplaceErrors(root), ...await directoryItemsErrors(root), ...await strayErrors(root)];
+  const errors = [...await marketplaceErrors(root), ...await directoryItemsErrors(root), ...await strayErrors(root), ...await duplicateSkillErrors(root)];
   const { plugins, items } = await sources(root);
   const ids = new Map<string, { flag?: string }>([
     ...plugins.map((p) => [`plugin:${String(p.name)}`, { flag: (p["x-nouter"] as { flag?: string } | undefined)?.flag }] as const),
