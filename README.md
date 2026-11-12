@@ -41,7 +41,7 @@ este (en una carpeta de datos) en esos commits. Correrlo de nuevo no duplica. Tr
 ## Releases
 
 Cada tag `vN` publica `directory.json` (el índice de lo que se muestra: las entradas con sus datos y `added`, la fecha del
-commit que las agregó) y empuja la rama inmutable `release/vN`, que es la que sincroniza cada tenant (el lector de git del OS
+commit que las agregó) y empuja la rama inmutable `release/vN` (`scripts/release-branch.ts`: si ya existe en el mismo commit, un re-run sigue; en otro, falla), que es la que sincroniza cada tenant (el lector de git del OS
 solo sigue ramas). nouter fija una versión y la sube con un PR propio.
 
 ## Desarrollo

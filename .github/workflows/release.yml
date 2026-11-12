@@ -17,12 +17,8 @@ jobs:
       - run: node scripts/validate.ts
       - run: node scripts/build.ts "${GITHUB_REF_NAME}"
       # El OS de cada tenant sincroniza ramas, no tags (el lector de git solo sigue ramas): cada release empuja su rama
-      # inmutable release/vN en el commit del tag. Si ya existe, el push falla y el release no sale.
-      - run: |
-          if git ls-remote --exit-code --heads origin "release/${GITHUB_REF_NAME}" >/dev/null; then
-            echo "release/${GITHUB_REF_NAME} ya existe: un release no se rehace, se sube la versión"; exit 1
-          fi
-          git push origin "HEAD:refs/heads/release/${GITHUB_REF_NAME}"
+      # inmutable release/vN en el commit del tag. Falla solo si ya existe en OTRO commit; un re-run pasa.
+      - run: node scripts/release-branch.ts "${GITHUB_REF_NAME}"
       - run: gh release create "${GITHUB_REF_NAME}" dist/directory.json --title "${GITHUB_REF_NAME}" --notes "Directory de plugins y skills ${GITHUB_REF_NAME}"
         env:
           GH_TOKEN: ${{ github.token }}

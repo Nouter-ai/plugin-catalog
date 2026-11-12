@@ -86,7 +86,7 @@ test("el repo real vale, y los dos workflows existen", async () => {
   const rel = await readFile(new URL("../.github/workflows/release.yml", import.meta.url), "utf8");
   assert.match(rel, /fetch-depth: 0/);
   assert.match(rel, /dist\/directory\.json/);
-  assert.match(rel, /release\/\$\{GITHUB_REF_NAME\}/);
+  assert.match(rel, /release-branch\.ts/);
   assert.match(rel, /contents: write/);
 });
 
