@@ -44,8 +44,11 @@ export const PLUGINS: PluginRow[] = [
   p("design", "design-media", "engineering"),
   p("operations", "automation-workflows", "tickets-tasks"),
   p("small-business", "automation-workflows", "finance", "sales"),
-  p("pdf-viewer", "files-documents", "reference-docs"),
 ];
+
+export const STDIO_REASON = "depende de un servidor local (stdio), que Nouter no corre";
+// Lo que se mira y no entra, con el motivo. pdf-viewer: su skill dice «You have access to a local PDF server» y su único servidor es stdio.
+export const EXCLUDED: { name: string; reason: string }[] = [{ name: "pdf-viewer", reason: STDIO_REASON }];
 
 export const SKILLS: SkillRow[] = [
   s("academy-guide", "reference-docs", "notes-memory"),
@@ -79,6 +82,15 @@ const write = (file: string, v: unknown) => writeFile(file, `${JSON.stringify(v,
 // Se copia la carpeta entera, sin lo que no es del plugin (el .git de un clon, módulos, restos del sistema).
 // Un servidor MCP stdio corre un comando en la máquina de quien lo usa: el OS de Nouter no lo ejecuta (nunca se muestra) y el CI del
 // Directory solo acepta servidores http. Se quita de .mcp.json (pdf-viewer trae uno); los http, con su URL o vacía, quedan como están.
+// Un plugin cuyo .mcp.json trae solo servidores stdio no sirve sin ellos: no se importa.
+async function onlyStdio(from: string): Promise<boolean> {
+  const file = join(from, ".mcp.json");
+  if (!existsSync(file)) return false;
+  const raw = await readJson(file);
+  const servers = Object.values((raw.mcpServers ?? raw) as Record<string, any>);
+  return servers.length > 0 && servers.every((v) => v && typeof v === "object" && ("command" in v || v.type === "stdio"));
+}
+
 async function dropStdioServers(to: string): Promise<void> {
   const file = join(to, ".mcp.json");
   if (!existsSync(file)) return;
@@ -111,6 +123,11 @@ export async function importAnthropic(o: ImportOptions): Promise<number> {
   for (const row of tables.plugins) {
     const from = join(o.kwp, row.name);
     if (!existsSync(join(from, ".claude-plugin/plugin.json"))) throw new Error(`${KWP_REPO}: no hay un plugin ${row.name} (falta ${row.name}/.claude-plugin/plugin.json)`);
+    if (await onlyStdio(from)) {
+      console.log(`excluido ${row.name}: ${STDIO_REASON}`);
+      rmSync(join(o.out, "plugins", row.name), { recursive: true, force: true });
+      continue;
+    }
     const manifest = await readJson(join(from, ".claude-plugin/plugin.json"));
     const to = join(o.out, "plugins", row.name);
     copyDir(from, to);
@@ -157,5 +174,5 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   if (head(skills) !== SKILLS_COMMIT) throw new Error(`${skills} tiene que estar en ${SKILLS_COMMIT} (git -C ${skills} checkout ${SKILLS_COMMIT})`);
   const root = out ? resolve(out) : resolve(fileURLToPath(import.meta.url), "../..");
   const n = await importAnthropic({ kwp: resolve(kwp), skills: resolve(skills), out: root });
-  console.log(`importados: ${n} (${PLUGINS.length} plugins y ${SKILLS.length} skills esperados)`);
+  console.log(`importados: ${n} (${PLUGINS.length} plugins como máximo y ${SKILLS.length} skills esperados)`);
 }

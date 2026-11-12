@@ -388,28 +388,6 @@
           "commit": "877a617b435ee2edfb002d9a3703c0a1a03aa1ba"
         }
       }
-    },
-    {
-      "name": "pdf-viewer",
-      "displayName": "PDF Viewer",
-      "source": "./plugins/pdf-viewer",
-      "description": "View, annotate, and sign PDFs in a live interactive viewer. Mark up contracts, fill forms with visual feedback, stamp approvals, and place signatures — then download the annotated copy.",
-      "version": "0.2.0",
-      "license": "Apache-2.0",
-      "category": "files-documents",
-      "tags": [
-        "reference-docs"
-      ],
-      "author": {
-        "name": "Anthropic"
-      },
-      "x-nouter": {
-        "verified": true,
-        "source": {
-          "repo": "anthropics/knowledge-work-plugins",
-          "commit": "877a617b435ee2edfb002d9a3703c0a1a03aa1ba"
-        }
-      }
     }
   ]
 }
