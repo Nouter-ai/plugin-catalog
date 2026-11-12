@@ -135,7 +135,8 @@ export function gitAddedAt(root: string): (path: string) => string {
   return (path) => {
     const out = execFileSync("git", ["log", "--diff-filter=A", "--format=%cI", "--", path], { cwd: root, encoding: "utf8" }).trim().split("\n").filter(Boolean);
     if (!out.length) throw new Error(`${path}: no tiene un commit que lo agregue (added sale del historial de git)`);
-    return out[out.length - 1];
+    // Normalizado a UTC con milisegundos: %cI da «+00:00» o «Z» según la versión de git.
+    return new Date(out[out.length - 1]).toISOString();
   };
 }
 
