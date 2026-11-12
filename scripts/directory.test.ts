@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import test from "node:test";
-import { buildDirectory } from "./directory.ts";
+import { buildDirectory, duplicateSkillErrors } from "./directory.ts";
 import { baseRepo, realRoot } from "./test-util.ts";
 import { validateRepo } from "./validate.ts";
 
@@ -122,4 +122,16 @@ test("el tagline de un item es opcional y de hasta 100 caracteres; si falta sale
   await falla(await conItems([{ ...item(), tagline: "x".repeat(101) }]), /tagline/);
   const idx = await buildDirectory(await conItems([{ ...item(), tagline: "Make skills" }]), "v1", () => "x");
   assert.equal(idx.entries.find((e) => e.id === "skill:skill-creator")!.tagline, "Make skills");
+});
+
+test("un SKILL.md idéntico en dos plugins (o en un plugin y una skill suelta) falla: el OS guarda una sola copia y un plugin llegaría sin esa skill", async () => {
+  const root = await baseRepo();
+  assert.deepEqual(await duplicateSkillErrors(root), []);
+  const skill = await readFile(join(root, "plugins/delivery-salesforce/skills/delivery-salesforce-build/SKILL.md"), "utf8");
+  await mkdir(join(root, "skills/copia"), { recursive: true });
+  await writeFile(join(root, "skills/copia/SKILL.md"), skill);
+  assert.match((await duplicateSkillErrors(root)).join(), /skills\/copia.*plugins\/delivery-salesforce|plugins\/delivery-salesforce.*skills\/copia/);
+  // Dentro de un mismo plugin no es asunto de este chequeo.
+  await rm(join(root, "skills"), { recursive: true });
+  assert.deepEqual(await duplicateSkillErrors(root), []);
 });
