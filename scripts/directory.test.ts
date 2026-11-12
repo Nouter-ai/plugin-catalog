@@ -106,3 +106,14 @@ test("el name de un item es el de su carpeta y el del frontmatter de su SKILL.md
   await falla(await conItems([{ ...item(), name: "otro" }]), /carpeta|name/);
   await falla(await conItems([item()], (r) => writeFile(join(r, "skills/skill-creator/SKILL.md"), "---\nname: otro\ndescription: d\n---\n")), /frontmatter/);
 });
+
+test("el banner no puede nombrar un item que tenga flag: lo vería quien no lo puede usar", async () => {
+  const con = async (featured: unknown, items: unknown[] = []) => {
+    const root = await conItems(items);
+    await writeFile(join(root, ".nouter/featured.json"), JSON.stringify(featured));
+    return root;
+  };
+  await falla(await con({ plugins: "plugin:delivery-salesforce" }), /flag/);
+  await falla(await con({ skills: "skill:skill-creator" }, [{ ...item(), flag: "directory-nativos" }]), /flag/);
+  assert.deepEqual(await validateRepo(await con({ skills: "skill:skill-creator" }, [item()])), []);
+});

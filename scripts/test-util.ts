@@ -16,7 +16,7 @@ export async function baseRepo(): Promise<string> {
   await cp(join(realRoot, "plugins/delivery-salesforce"), join(root, "plugins/delivery-salesforce"), { recursive: true });
   await mkdir(join(root, ".nouter"), { recursive: true });
   await writeFile(join(root, ".nouter/directory.json"), JSON.stringify({ items: [] }));
-  await writeFile(join(root, ".nouter/featured.json"), JSON.stringify({ plugins: "plugin:delivery-salesforce" }));
+  await writeFile(join(root, ".nouter/featured.json"), JSON.stringify({}));
   return root;
 }
 

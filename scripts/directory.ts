@@ -82,7 +82,7 @@ async function readFeatured(root: string): Promise<Record<string, unknown> | str
 }
 
 // .nouter/featured.json: el banner de Skills (`skills`, un `skill:<name>`) y el de Plugins (`plugins`, un `plugin:<name>`), con ids que existan.
-export async function featuredErrors(root: string, entries: ReadonlyMap<string, unknown>): Promise<string[]> {
+export async function featuredErrors(root: string, entries: ReadonlyMap<string, { flag?: string }>): Promise<string[]> {
   const f = await readFeatured(root);
   if (typeof f === "string") return [f];
   const errors: string[] = [];
@@ -90,6 +90,7 @@ export async function featuredErrors(root: string, entries: ReadonlyMap<string, 
     if (k !== "skills" && k !== "plugins") { errors.push(`featured.json: clave desconocida ${k}`); continue; }
     const prefix = k === "skills" ? "skill:" : "plugin:";
     if (typeof v !== "string" || !v.startsWith(prefix) || !entries.has(v)) errors.push(`featured.json: ${k} tiene que ser el id de un ${prefix.slice(0, -1)} que exista (${String(v)})`);
+    else if (entries.get(v)?.flag) errors.push(`featured.json: ${k} nombra ${v}, que está detrás del flag ${entries.get(v)!.flag}: el banner lo vería quien no lo puede usar`);
   }
   return errors;
 }
@@ -123,7 +124,9 @@ export async function strayErrors(root: string): Promise<string[]> {
 export async function validateRepo(root: string): Promise<string[]> {
   const errors = [...await marketplaceErrors(root), ...await directoryItemsErrors(root), ...await strayErrors(root)];
   const { plugins, items } = await sources(root);
-  const ids = new Map<string, true>([...plugins.map((p) => [`plugin:${String(p.name)}`, true] as const), ...items.map((i) => [`${i.type}:${i.name}`, true] as const)]);
+  const ids = new Map<string, { flag?: string }>([
+    ...plugins.map((p) => [`plugin:${String(p.name)}`, { flag: (p["x-nouter"] as { flag?: string } | undefined)?.flag }] as const),
+    ...items.map((i) => [`${i.type}:${i.name}`, { flag: i.flag }] as const)]);
   return [...errors, ...await featuredErrors(root, ids)];
 }
 
