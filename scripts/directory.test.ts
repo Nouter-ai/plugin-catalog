@@ -1,22 +1,16 @@
 import assert from "node:assert/strict";
-import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import test from "node:test";
 import { buildDirectory } from "./directory.ts";
+import { baseRepo, realRoot } from "./test-util.ts";
 import { validateRepo } from "./validate.ts";
 
-const realRoot = new URL("..", import.meta.url).pathname;
 const APACHE = await readFile(new URL("../LICENSE", import.meta.url), "utf8");
 const item = () => ({ type: "skill", name: "skill-creator", path: "skills/skill-creator", description: "d", category: "engineering", tags: [],
   author: "Anthropic", license: "Apache-2.0", verified: true, source: { repo: "anthropics/skills", commit: "2c5958e" } });
 
-// Una copia del repo real, para romperla de a una cosa.
-async function copia(): Promise<string> {
-  const root = await mkdtemp(join(tmpdir(), "dir-"));
-  await cp(realRoot, root, { recursive: true, filter: (p) => !p.includes("/.git/") && !p.endsWith("/.git") && !p.includes("node_modules") && !p.includes("/dist") });
-  return root;
-}
+const copia = baseRepo;
 async function conItems(items: unknown[], extra?: (root: string) => Promise<void>): Promise<string> {
   const root = await copia();
   await mkdir(join(root, "skills/skill-creator"), { recursive: true });

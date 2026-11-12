@@ -1,0 +1,5 @@
+{ "name": "knowledge-work-plugins", "owner": { "name": "Anthropic" }, "plugins": [
+  { "name": "sales", "displayName": "Sales", "source": "./sales", "description": "Sell more." },
+  { "name": "engineering", "source": "./engineering", "description": "Ship code." },
+  { "name": "tercero", "source": { "source": "git-subdir", "url": "https://github.com/x/y.git" }, "description": "De afuera." }
+] }

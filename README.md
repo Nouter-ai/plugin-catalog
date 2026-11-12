@@ -8,11 +8,25 @@ del sistema *Nouter Directory*, en el release que fija el plano de control.
 | Plugin | Qué es |
 |---|---|
 | `delivery-salesforce` | Delivery for Salesforce, el primer stack de la línea de entrega: la plantilla de proceso «Delivery order» y las skills de cada etapa. |
+| los 17 de Anthropic | Los plugins propios de [`anthropics/knowledge-work-plugins`](https://github.com/anthropics/knowledge-work-plugins) (`sales`, `finance`, `legal`, …), copiados. |
+
+Además, 18 skills sueltas de [`anthropics/skills`](https://github.com/anthropics/skills) (`.nouter/directory.json`).
 
 ## Qué entra
 
 Solo con licencia libre (`Apache-2.0`, `MIT`, `BSD-2-Clause`, `BSD-3-Clause` o `ISC`), con su archivo de licencia en la
 carpeta del item (`LICENSE*` o `LICENSES/`) y, si se copió de otro repo, su origen (`x-nouter.source`: repo y commit).
+
+## La siembra de lo libre de Anthropic
+
+Se **copia**, no se referencia: los plugins de `knowledge-work-plugins` cuyo `source` es local (los de terceros que lista su
+marketplace no entran) y las skills de `anthropics/skills` con `LICENSE.txt` Apache-2.0 (sin ella, como `doc-coauthoring`, no entra;
+tampoco `partner-built/*`). Cada item lleva su licencia (la del root, si el plugin no trae la suya) y su origen: `x-nouter.source`, con
+el repo y el commit (`877a617` de `knowledge-work-plugins` y `2c5958e` de `skills`). Del `.mcp.json` de un plugin solo se quita un
+servidor stdio (corre un comando local; el OS de Nouter no lo ejecuta y el CI solo acepta http): `pdf-viewer` trae uno.
+
+Se volvió a generar con `node scripts/import-anthropic.ts <knowledge-work-plugins> <skills>`, con los dos repos clonados afuera de
+este (en una carpeta de datos) en esos commits. Correrlo de nuevo no duplica. Traer versiones nuevas es del backlog del Directory.
 
 ## Formato
 
