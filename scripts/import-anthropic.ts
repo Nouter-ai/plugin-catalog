@@ -21,60 +21,64 @@ export const SKILLS_REPO = "anthropics/skills";
 export const KWP_COMMIT = "877a617b435ee2edfb002d9a3703c0a1a03aa1ba"; // 2026-11-10
 export const SKILLS_COMMIT = "2c5958ecac7cee2b583967a2c4981d0f4a75c579"; // 2026-11-06
 
-export interface PluginRow { name: string; category: DirectoryCategory; tags: DirectoryCategory[] }
+export interface PluginRow { name: string; category: DirectoryCategory; tags: DirectoryCategory[]; tagline?: string }
 export interface SkillRow extends PluginRow { license: "Apache-2.0" }
 
-const p = (name: string, category: DirectoryCategory, ...tags: DirectoryCategory[]): PluginRow => ({ name, category, tags });
-const s = (name: string, category: DirectoryCategory, ...tags: DirectoryCategory[]): SkillRow => ({ name, category, tags, license: "Apache-2.0" });
+const p = (name: string, tagline: string, category: DirectoryCategory, ...tags: DirectoryCategory[]): PluginRow => ({ name, category, tags, tagline });
+const s = (name: string, tagline: string, category: DirectoryCategory, ...tags: DirectoryCategory[]): SkillRow => ({ name, category, tags, tagline, license: "Apache-2.0" });
 
 export const PLUGINS: PluginRow[] = [
-  p("productivity", "tickets-tasks", "automation-workflows", "notes-memory"),
-  p("enterprise-search", "reference-docs", "notes-memory", "files-documents"),
-  p("cowork-plugin-management", "engineering", "automation-workflows"),
-  p("sales", "sales", "contacts-leads", "marketing"),
-  p("finance", "finance", "databases"),
-  p("data", "databases", "engineering"),
-  p("legal", "legal", "files-documents"),
-  p("marketing", "marketing", "design-media", "email-messages"),
-  p("customer-support", "tickets-tasks", "email-messages"),
-  p("product-management", "tickets-tasks", "engineering", "reference-docs"),
-  p("bio-research", "reference-docs", "databases"),
-  p("engineering", "engineering", "logs-errors", "tickets-tasks"),
-  p("human-resources", "tickets-tasks", "legal"),
-  p("design", "design-media", "engineering"),
-  p("operations", "automation-workflows", "tickets-tasks"),
-  p("small-business", "automation-workflows", "finance", "sales"),
+  p("productivity", "Plan your day, track tasks and keep context about your work", "tickets-tasks", "automation-workflows", "notes-memory"),
+  p("enterprise-search", "Search your company's email, chat, docs and wikis in one place", "reference-docs", "notes-memory", "files-documents"),
+  p("sales", "Prep calls, research accounts and keep your pipeline moving", "sales", "contacts-leads", "marketing"),
+  p("finance", "Journal entries, reconciliation, close and financial statements", "finance", "databases"),
+  p("data", "Write SQL, explore datasets and turn data into dashboards", "databases", "engineering"),
+  p("legal", "Contract review, NDA triage and compliance for in-house teams", "legal", "files-documents"),
+  p("marketing", "Create content, plan campaigns and track performance", "marketing", "design-media", "email-messages"),
+  p("customer-support", "Triage tickets, draft replies and build your knowledge base", "tickets-tasks", "email-messages"),
+  p("product-management", "Write specs, plan roadmaps and synthesize user research", "tickets-tasks", "engineering", "reference-docs"),
+  p("bio-research", "Search literature and databases for early-stage life sciences R&D", "reference-docs", "databases"),
+  p("engineering", "Standups, code review, architecture decisions and incident response", "engineering", "logs-errors", "tickets-tasks"),
+  p("human-resources", "Recruiting, onboarding, performance reviews and policy guidance", "tickets-tasks", "legal"),
+  p("design", "Design critique, accessibility audits, UX writing and dev handoff", "design-media", "engineering"),
+  p("operations", "Vendor management, process docs and capacity planning", "automation-workflows", "tickets-tasks"),
+  p("small-business", "Ready-made workflows to run and grow a small business", "automation-workflows", "finance", "sales"),
 ];
 
 export const STDIO_REASON = "depende de un servidor local (stdio), que Nouter no corre";
-// Lo que se mira y no entra, con el motivo. pdf-viewer: su skill dice «You have access to a local PDF server» y su único servidor es stdio.
-export const EXCLUDED: { name: string; reason: string }[] = [{ name: "pdf-viewer", reason: STDIO_REASON }];
+export interface Excluded { type: "plugin" | "skill"; name: string; reason: string }
+// Lo que se mira y no entra, con el motivo. El importador también borra lo que ya hubiera de esto en el destino.
+export const EXCLUDED: Excluded[] = [
+  { type: "plugin", name: "pdf-viewer", reason: `${STDIO_REASON}: su skill dice «You have access to a local PDF server»` },
+  { type: "plugin", name: "cowork-plugin-management", reason: "pide el entorno de la app Cowork, que Nouter no tiene" },
+  { type: "skill", name: "academy-guide", reason: "le dice al modelo que recomiende Claude Academy, y en Nouter el modelo puede no ser Claude" },
+];
 
 export const SKILLS: SkillRow[] = [
-  s("academy-guide", "reference-docs", "notes-memory"),
-  s("algorithmic-art", "design-media", "engineering"),
-  s("brand-guidelines", "design-media", "marketing"),
-  s("canvas-design", "design-media", "marketing"),
-  s("claude-api", "reference-docs", "engineering"),
-  s("discernment-nudge", "automation-workflows", "notes-memory"),
-  s("docx", "files-documents", "reference-docs"),
-  s("frontend-design", "design-media", "engineering"),
-  s("internal-comms", "email-messages", "marketing"),
-  s("mcp-builder", "engineering", "reference-docs"),
-  s("pdf", "files-documents", "reference-docs"),
-  s("pptx", "design-media", "files-documents"),
-  s("skill-creator", "engineering", "automation-workflows"),
-  s("slack-gif-creator", "design-media", "email-messages"),
-  s("theme-factory", "design-media", "marketing"),
-  s("web-artifacts-builder", "engineering", "design-media"),
-  s("webapp-testing", "engineering", "automation-workflows"),
-  s("xlsx", "files-documents", "finance"),
+  s("algorithmic-art", "Generative art with p5.js, seeded randomness and live parameters", "design-media", "engineering"),
+  s("brand-guidelines", "Apply Anthropic's brand colors and typography to your documents", "design-media", "marketing"),
+  s("canvas-design", "Create posters and visual art as PNG and PDF", "design-media", "marketing"),
+  s("claude-api", "Reference for building with the Claude API and SDKs", "reference-docs", "engineering"),
+  s("discernment-nudge", "Adds follow-up questions that help you check an answer before acting on it", "automation-workflows", "notes-memory"),
+  s("docx", "Create, read and edit Word documents", "files-documents", "reference-docs"),
+  s("frontend-design", "Distinctive visual design for new or existing interfaces", "design-media", "engineering"),
+  s("internal-comms", "Write internal updates, newsletters and FAQs in your company's formats", "email-messages", "marketing"),
+  s("mcp-builder", "Build MCP servers that let models use external services", "engineering", "reference-docs"),
+  s("pdf", "Read, merge, split, fill and create PDF files", "files-documents", "reference-docs"),
+  s("pptx", "Create and edit PowerPoint presentations", "design-media", "files-documents"),
+  s("skill-creator", "Create, improve and measure your own skills", "engineering", "automation-workflows"),
+  s("slack-gif-creator", "Make animated GIFs sized for Slack", "design-media", "email-messages"),
+  s("theme-factory", "Style slides, docs and pages with ready-made themes", "design-media", "marketing"),
+  s("web-artifacts-builder", "Build multi-component HTML artifacts with React and Tailwind", "engineering", "design-media"),
+  s("webapp-testing", "Test local web apps with Playwright and capture screenshots", "engineering", "automation-workflows"),
+  s("xlsx", "Open, edit and create spreadsheets", "files-documents", "finance"),
 ];
 
 export interface ImportOptions {
   kwp: string; skills: string; out: string;
   commits?: { kwp: string; skills: string };
   tables?: { plugins: PluginRow[]; skills: SkillRow[] };
+  excluded?: Excluded[];
 }
 
 const readJson = async (file: string): Promise<any> => JSON.parse(await readFile(file, "utf8"));
@@ -119,6 +123,10 @@ export async function importAnthropic(o: ImportOptions): Promise<number> {
 
   // Los plugins: la carpeta copiada tal cual (sin reescribir el .mcp.json), con la licencia del root si no trae la suya.
   const marketplace = await readJson(marketplaceFile);
+  const excluded = o.excluded ?? EXCLUDED;
+  const dropped = (t: Excluded["type"]) => new Set(excluded.filter((x) => x.type === t).map((x) => x.name));
+  for (const name of dropped("plugin")) rmSync(join(o.out, "plugins", name), { recursive: true, force: true });
+  for (const name of dropped("skill")) rmSync(join(o.out, "skills", name), { recursive: true, force: true });
   const imported = new Map<string, any>();
   for (const row of tables.plugins) {
     const from = join(o.kwp, row.name);
@@ -137,12 +145,13 @@ export async function importAnthropic(o: ImportOptions): Promise<number> {
       cpSync(rootLicense, join(to, "LICENSE"));
     }
     const display = (origin.plugins as any[]).find((x) => x.name === row.name && typeof x.source === "string")?.displayName;
+    const tagline = row.tagline ?? (marketplace.plugins as any[]).find((x) => x.name === row.name)?.["x-nouter"]?.tagline;
     imported.set(row.name, { name: row.name, ...(typeof display === "string" ? { displayName: display } : {}), source: `./plugins/${row.name}`,
       description: manifest.description, version: manifest.version, license: "Apache-2.0", category: row.category, tags: row.tags,
-      author: { name: "Anthropic" }, "x-nouter": { verified: true, source: { repo: KWP_REPO, commit: commits.kwp } } });
+      author: { name: "Anthropic" }, "x-nouter": { verified: true, ...(tagline ? { tagline } : {}), source: { repo: KWP_REPO, commit: commits.kwp } } });
     count++;
   }
-  marketplace.plugins = [...(marketplace.plugins as any[]).filter((x) => !imported.has(x.name)), ...imported.values()];
+  marketplace.plugins = [...(marketplace.plugins as any[]).filter((x) => !imported.has(x.name) && !dropped("plugin").has(x.name)), ...imported.values()];
   await write(marketplaceFile, marketplace);
 
   // Las skills sueltas: solo las que traen LICENSE.txt Apache-2.0; lo demás del Directory queda como estaba.
@@ -156,12 +165,13 @@ export async function importAnthropic(o: ImportOptions): Promise<number> {
     if (license !== row.license) { rmSync(to, { recursive: true, force: true }); continue; }
     copyDir(from, to);
     const fm = parseFrontmatter(await readFile(join(from, "SKILL.md"), "utf8"));
-    skills.push({ type: "skill", name: row.name, path: `skills/${row.name}`, description: fm.description, category: row.category, tags: row.tags,
+    const tagline = row.tagline ?? (dir.items as any[]).find((x) => x.type === "skill" && x.name === row.name)?.tagline;
+    skills.push({ type: "skill", name: row.name, path: `skills/${row.name}`, ...(tagline ? { tagline } : {}), description: fm.description, category: row.category, tags: row.tags,
       author: "Anthropic", license: row.license, verified: true, source: { repo: SKILLS_REPO, commit: commits.skills } });
     count++;
   }
   const names = new Set(skills.map((x) => x.name));
-  dir.items = [...(dir.items as any[]).filter((x) => !(x.type === "skill" && names.has(x.name))), ...skills];
+  dir.items = [...(dir.items as any[]).filter((x) => !(x.type === "skill" && (names.has(x.name) || dropped("skill").has(x.name)))), ...skills];
   await write(itemsFile, dir);
   return count;
 }

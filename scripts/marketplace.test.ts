@@ -133,3 +133,8 @@ test("se rechaza lo peligroso: hooks, bin/, mcpServers y lspServers, y credencia
 test("el name de un plugin es el de su carpeta", async () => {
   await falla([{ ...ok(), source: "./plugins/otro" }], /source/);
 });
+
+test("x-nouter.tagline es opcional y de hasta 100 caracteres", async () => {
+  assert.deepEqual(await marketplaceErrors(await repo([{ ...ok(), "x-nouter": { ...ok()["x-nouter"], tagline: "Prep calls" } }])), []);
+  await falla([{ ...ok(), "x-nouter": { ...ok()["x-nouter"], tagline: "x".repeat(101) } }], /tagline/);
+});

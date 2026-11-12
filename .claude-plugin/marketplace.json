@@ -27,7 +27,8 @@
       ],
       "x-nouter": {
         "verified": true,
-        "flag": "salesforce-delivery"
+        "flag": "salesforce-delivery",
+        "tagline": "Nouter's delivery line for Salesforce, from understanding to verified work"
       }
     },
     {
@@ -47,6 +48,7 @@
       },
       "x-nouter": {
         "verified": true,
+        "tagline": "Plan your day, track tasks and keep context about your work",
         "source": {
           "repo": "anthropics/knowledge-work-plugins",
           "commit": "877a617b435ee2edfb002d9a3703c0a1a03aa1ba"
@@ -70,28 +72,7 @@
       },
       "x-nouter": {
         "verified": true,
-        "source": {
-          "repo": "anthropics/knowledge-work-plugins",
-          "commit": "877a617b435ee2edfb002d9a3703c0a1a03aa1ba"
-        }
-      }
-    },
-    {
-      "name": "cowork-plugin-management",
-      "displayName": "Plugin Management",
-      "source": "./plugins/cowork-plugin-management",
-      "description": "Create, customize, and manage plugins tailored to your organization's tools and workflows. Configure MCP servers, adjust plugin behavior, and adapt templates to match how your team works.",
-      "version": "0.2.2",
-      "license": "Apache-2.0",
-      "category": "engineering",
-      "tags": [
-        "automation-workflows"
-      ],
-      "author": {
-        "name": "Anthropic"
-      },
-      "x-nouter": {
-        "verified": true,
+        "tagline": "Search your company's email, chat, docs and wikis in one place",
         "source": {
           "repo": "anthropics/knowledge-work-plugins",
           "commit": "877a617b435ee2edfb002d9a3703c0a1a03aa1ba"
@@ -115,6 +96,7 @@
       },
       "x-nouter": {
         "verified": true,
+        "tagline": "Prep calls, research accounts and keep your pipeline moving",
         "source": {
           "repo": "anthropics/knowledge-work-plugins",
           "commit": "877a617b435ee2edfb002d9a3703c0a1a03aa1ba"
@@ -137,6 +119,7 @@
       },
       "x-nouter": {
         "verified": true,
+        "tagline": "Journal entries, reconciliation, close and financial statements",
         "source": {
           "repo": "anthropics/knowledge-work-plugins",
           "commit": "877a617b435ee2edfb002d9a3703c0a1a03aa1ba"
@@ -159,6 +142,7 @@
       },
       "x-nouter": {
         "verified": true,
+        "tagline": "Write SQL, explore datasets and turn data into dashboards",
         "source": {
           "repo": "anthropics/knowledge-work-plugins",
           "commit": "877a617b435ee2edfb002d9a3703c0a1a03aa1ba"
@@ -181,6 +165,7 @@
       },
       "x-nouter": {
         "verified": true,
+        "tagline": "Contract review, NDA triage and compliance for in-house teams",
         "source": {
           "repo": "anthropics/knowledge-work-plugins",
           "commit": "877a617b435ee2edfb002d9a3703c0a1a03aa1ba"
@@ -204,6 +189,7 @@
       },
       "x-nouter": {
         "verified": true,
+        "tagline": "Create content, plan campaigns and track performance",
         "source": {
           "repo": "anthropics/knowledge-work-plugins",
           "commit": "877a617b435ee2edfb002d9a3703c0a1a03aa1ba"
@@ -226,6 +212,7 @@
       },
       "x-nouter": {
         "verified": true,
+        "tagline": "Triage tickets, draft replies and build your knowledge base",
         "source": {
           "repo": "anthropics/knowledge-work-plugins",
           "commit": "877a617b435ee2edfb002d9a3703c0a1a03aa1ba"
@@ -249,6 +236,7 @@
       },
       "x-nouter": {
         "verified": true,
+        "tagline": "Write specs, plan roadmaps and synthesize user research",
         "source": {
           "repo": "anthropics/knowledge-work-plugins",
           "commit": "877a617b435ee2edfb002d9a3703c0a1a03aa1ba"
@@ -271,6 +259,7 @@
       },
       "x-nouter": {
         "verified": true,
+        "tagline": "Search literature and databases for early-stage life sciences R&D",
         "source": {
           "repo": "anthropics/knowledge-work-plugins",
           "commit": "877a617b435ee2edfb002d9a3703c0a1a03aa1ba"
@@ -294,6 +283,7 @@
       },
       "x-nouter": {
         "verified": true,
+        "tagline": "Standups, code review, architecture decisions and incident response",
         "source": {
           "repo": "anthropics/knowledge-work-plugins",
           "commit": "877a617b435ee2edfb002d9a3703c0a1a03aa1ba"
@@ -316,6 +306,7 @@
       },
       "x-nouter": {
         "verified": true,
+        "tagline": "Recruiting, onboarding, performance reviews and policy guidance",
         "source": {
           "repo": "anthropics/knowledge-work-plugins",
           "commit": "877a617b435ee2edfb002d9a3703c0a1a03aa1ba"
@@ -338,6 +329,7 @@
       },
       "x-nouter": {
         "verified": true,
+        "tagline": "Design critique, accessibility audits, UX writing and dev handoff",
         "source": {
           "repo": "anthropics/knowledge-work-plugins",
           "commit": "877a617b435ee2edfb002d9a3703c0a1a03aa1ba"
@@ -360,6 +352,7 @@
       },
       "x-nouter": {
         "verified": true,
+        "tagline": "Vendor management, process docs and capacity planning",
         "source": {
           "repo": "anthropics/knowledge-work-plugins",
           "commit": "877a617b435ee2edfb002d9a3703c0a1a03aa1ba"
@@ -383,6 +376,7 @@
       },
       "x-nouter": {
         "verified": true,
+        "tagline": "Ready-made workflows to run and grow a small business",
         "source": {
           "repo": "anthropics/knowledge-work-plugins",
           "commit": "877a617b435ee2edfb002d9a3703c0a1a03aa1ba"

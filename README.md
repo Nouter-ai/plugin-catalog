@@ -8,9 +8,9 @@ del sistema *Nouter Directory*, en el release que fija el plano de control.
 | Plugin | Qué es |
 |---|---|
 | `delivery-salesforce` | Delivery for Salesforce, el primer stack de la línea de entrega: la plantilla de proceso «Delivery order» y las skills de cada etapa. |
-| los 16 de Anthropic | Los plugins propios de [`anthropics/knowledge-work-plugins`](https://github.com/anthropics/knowledge-work-plugins) (`sales`, `finance`, `legal`, …), copiados. |
+| los 15 de Anthropic | Los plugins propios de [`anthropics/knowledge-work-plugins`](https://github.com/anthropics/knowledge-work-plugins) (`sales`, `finance`, `legal`, …), copiados. |
 
-Además, 18 skills sueltas de [`anthropics/skills`](https://github.com/anthropics/skills) (`.nouter/directory.json`).
+Además, 17 skills sueltas de [`anthropics/skills`](https://github.com/anthropics/skills) (`.nouter/directory.json`).
 
 ## Qué entra
 
@@ -23,7 +23,7 @@ Se **copia**, no se referencia: los plugins de `knowledge-work-plugins` cuyo `so
 marketplace no entran) y las skills de `anthropics/skills` con `LICENSE.txt` Apache-2.0 (sin ella, como `doc-coauthoring`, no entra;
 tampoco `partner-built/*`). Cada item lleva su licencia (la del root, si el plugin no trae la suya) y su origen: `x-nouter.source`, con
 el repo y el commit (`877a617` de `knowledge-work-plugins` y `2c5958e` de `skills`). Un servidor stdio corre un comando local: el OS de Nouter no lo ejecuta y el CI solo acepta http. A un plugin que trae stdio y http se le
-quitan los stdio; uno que trae **solo** stdio no entra (`pdf-viewer`: depende de un servidor local, que Nouter no corre).
+quitan los stdio; uno que trae **solo** stdio no entra (`pdf-viewer`: depende de un servidor local, que Nouter no corre). Tampoco entran `cowork-plugin-management` (pide el entorno de la app Cowork) ni la skill `academy-guide` (recomienda Claude Academy y en Nouter el modelo puede no ser Claude): la lista, con su motivo, es `EXCLUDED` en `scripts/import-anthropic.ts`. Cada plugin y skill sembrado lleva un `tagline` curado (`x-nouter.tagline` o `tagline`, hasta 100 caracteres); sin él, la tarjeta usa la primera oración de la descripción.
 
 Se volvió a generar con `node scripts/import-anthropic.ts <knowledge-work-plugins> <skills>`, con los dos repos clonados afuera de
 este (en una carpeta de datos) en esos commits. Correrlo de nuevo no duplica. Traer versiones nuevas es del backlog del Directory.
@@ -32,10 +32,10 @@ este (en una carpeta de datos) en esos commits. Correrlo de nuevo no duplica. Tr
 
 - **Plugins:** su fila de `.claude-plugin/marketplace.json` lleva, además de las del formato de marketplace de Claude,
   `category` (uno de los 18 temas de `schema/categories.json`), `tags` (hasta 2 temas más), `author.name`, `license`, y
-  `x-nouter`: `{ verified, flag?, source? }`. `flag` es el de nouter que esconde el item a quien no lo tiene
+  `x-nouter`: `{ verified, tagline?, flag?, source? }`. `flag` es el de nouter que esconde el item a quien no lo tiene
   (`schema/flags.json`, la foto de los nombres vigentes).
 - **Skills y blueprints sueltos:** `.nouter/directory.json`, `{ items: [{ type, name, path, description, category, tags,
-  author, license, verified, flag?, source? }] }`. `path` es la carpeta con su `SKILL.md` o `blueprint.json`.
+  author, license, verified, tagline?, flag?, source? }] }`. `path` es la carpeta con su `SKILL.md` o `blueprint.json`.
 - **Destacados:** `.nouter/featured.json`, `{ skills?: "skill:<name>", plugins?: "plugin:<name>" }`, el banner de cada pestaña.
 
 ## Releases

@@ -117,3 +117,9 @@ test("el banner no puede nombrar un item que tenga flag: lo vería quien no lo p
   await falla(await con({ skills: "skill:skill-creator" }, [{ ...item(), flag: "directory-nativos" }]), /flag/);
   assert.deepEqual(await validateRepo(await con({ skills: "skill:skill-creator" }, [item()])), []);
 });
+
+test("el tagline de un item es opcional y de hasta 100 caracteres; si falta sale la primera oración", async () => {
+  await falla(await conItems([{ ...item(), tagline: "x".repeat(101) }]), /tagline/);
+  const idx = await buildDirectory(await conItems([{ ...item(), tagline: "Make skills" }]), "v1", () => "x");
+  assert.equal(idx.entries.find((e) => e.id === "skill:skill-creator")!.tagline, "Make skills");
+});
