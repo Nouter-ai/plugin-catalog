@@ -74,9 +74,22 @@ function mcpErrors(at: string, raw: unknown): string[] {
   for (const [name, s] of Object.entries(servers)) {
     const ok = isObj(s) && s.type === "http" && typeof s.url === "string" && (s.url === "" || s.url.startsWith("https://"));
     if (!ok) errors.push(`${at}/.mcp.json: el servidor mcp ${name} tiene que ser { type: "http", url: https o "" }`);
+    if (isObj(s) && ("headers" in s || "headersHelper" in s)) errors.push(`${at}/.mcp.json: el servidor mcp ${name} lleva headers: una credencial en el repo llegaría a cada tenant`);
+    if (isObj(s) && typeof s.url === "string" && s.url.startsWith("https://")) {
+      try {
+        const u = new URL(s.url);
+        if (u.username || u.password) errors.push(`${at}/.mcp.json: la URL del servidor mcp ${name} lleva credenciales (usuario:clave@)`);
+      } catch { errors.push(`${at}/.mcp.json: la URL del servidor mcp ${name} no es válida`); }
+    }
   }
   return errors;
 }
+
+const ENTRY_KEYS = ["name", "displayName", "source", "description", "version", "license", "keywords", "category", "tags", "author", "homepage",
+  "repository", "treeHash", "x-nouter"];
+const ROOT_KEYS = ["name", "owner", "plugins"];
+// Lo que ejecuta código o abre una puerta en la máquina de quien instala: nunca entra al Directory.
+const RISKY = ["hooks", "mcpServers", "lspServers"];
 
 export async function marketplaceErrors(root: string): Promise<string[]> {
   const errors: string[] = [];
@@ -84,6 +97,7 @@ export async function marketplaceErrors(root: string): Promise<string[]> {
   let m: unknown;
   try { m = JSON.parse(await readFile(file, "utf8")); } catch { return [".claude-plugin/marketplace.json: no existe o no es JSON"]; }
   if (!isObj(m)) return ["marketplace.json: tiene que ser un objeto"];
+  for (const k of Object.keys(m)) if (!ROOT_KEYS.includes(k)) errors.push(`marketplace.json: clave desconocida ${k}`);
   if (m.name !== "nouter") errors.push('marketplace.json: name tiene que ser "nouter"');
   if (!isObj(m.owner) || !str(m.owner.name, 1, 100)) errors.push("marketplace.json: owner.name obligatorio");
   if (!Array.isArray(m.plugins)) return [...errors, "marketplace.json: plugins tiene que ser una lista"];
@@ -92,6 +106,10 @@ export async function marketplaceErrors(root: string): Promise<string[]> {
     if (!isObj(p)) { errors.push(`plugins[${i}]: tiene que ser un objeto`); continue; }
     const name = typeof p.name === "string" ? p.name : "";
     const at = `plugin ${name || i}`;
+    for (const k of Object.keys(p)) {
+      if (RISKY.includes(k)) errors.push(`plugin ${name || i}: ${k} no entra al Directory (ejecuta o abre algo en la máquina de quien instala)`);
+      else if (!ENTRY_KEYS.includes(k)) errors.push(`plugin ${name || i}: clave desconocida ${k}`);
+    }
     if (!SLUG.test(name)) errors.push(`${at}: name en minúsculas, letras, números y guiones`);
     if (names.has(name)) errors.push(`${at}: name repetido`);
     names.add(name);
@@ -106,16 +124,20 @@ export async function marketplaceErrors(root: string): Promise<string[]> {
     if (!manifest) errors.push(`${at}: falta .claude-plugin/plugin.json`);
     else {
       if (manifest.name !== name) errors.push(`${at}: plugin.json dice name ${String(manifest.name)}`);
+      for (const k of RISKY) if (k in manifest) errors.push(`${at}: plugin.json lleva ${k}, que no entra al Directory`);
       if (manifest.version !== p.version) errors.push(`${at}: plugin.json dice version ${String(manifest.version)} y el marketplace ${String(p.version)}`);
     }
     const author = isObj(p.author) ? p.author.name : undefined;
     const x = p["x-nouter"];
-    if (!isObj(x) || Object.keys(x).some((k) => !["verified", "flag", "source"].includes(k))) {
-      errors.push(`${at}: x-nouter tiene que ser { verified, flag?, source? } sin otras claves`);
+    if (!isObj(x) || Object.keys(x).some((k) => !["verified", "flag", "source", "tagline"].includes(k))) {
+      errors.push(`${at}: x-nouter tiene que ser { verified, flag?, source?, tagline? } sin otras claves`);
     }
+    if (isObj(x) && x.tagline !== undefined && !str(x.tagline, 1, 100)) errors.push(`${at}: x-nouter.tagline de 1 a 100 caracteres`);
     errors.push(...metaErrors(at, { category: p.category, tags: p.tags ?? [], author, flag: isObj(x) ? x.flag : undefined,
       verified: isObj(x) ? x.verified : undefined, source: isObj(x) ? x.source : undefined, where: "x-nouter" }));
     errors.push(...await licenseErrors(at, p.license, dir));
+    if (existsSync(join(dir, "hooks/hooks.json"))) errors.push(`${at}: hooks/hooks.json: los hooks no entran al Directory`);
+    if (existsSync(join(dir, "bin"))) errors.push(`${at}: bin/: los ejecutables no entran al Directory`);
     const mcp = await readFile(join(dir, ".mcp.json"), "utf8").then((t) => JSON.parse(t) as unknown, () => undefined);
     if (mcp !== undefined) errors.push(...mcpErrors(at, mcp));
   }

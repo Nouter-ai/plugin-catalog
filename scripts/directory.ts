@@ -7,7 +7,7 @@ import { existsSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { DirectoryCategory } from "./categories.ts";
-import { taglineOf } from "./frontmatter.ts";
+import { parseFrontmatter, taglineOf } from "./frontmatter.ts";
 import { isObj, licenseErrors, marketplaceErrors, metaErrors } from "./marketplace.ts";
 
 export type DirectoryEntryType = "connector" | "plugin" | "skill" | "blueprint";
@@ -28,7 +28,7 @@ const SLUG = /^[a-z][a-z0-9-]{0,59}$/;
 const ITEM_TYPES = ["skill", "blueprint"];
 const ITEM_FILE: Record<string, string> = { skill: "SKILL.md", blueprint: "blueprint.json" };
 
-interface Item { type: "skill" | "blueprint"; name: string; path: string; description: string; category: DirectoryCategory; tags: DirectoryCategory[];
+interface Item { type: "skill" | "blueprint"; name: string; path: string; tagline?: string; description: string; category: DirectoryCategory; tags: DirectoryCategory[];
   author: string; license: string; verified: boolean; flag?: string; source?: { repo: string; commit: string } }
 
 async function readItems(root: string): Promise<unknown[] | string> {
@@ -47,7 +47,7 @@ export async function directoryItemsErrors(root: string): Promise<string[]> {
   for (const [i, it] of items.entries()) {
     if (!isObj(it)) { errors.push(`items[${i}]: tiene que ser un objeto`); continue; }
     const at = `item ${typeof it.name === "string" ? it.name : i}`;
-    const known = ["type", "name", "path", "description", "category", "tags", "author", "license", "verified", "flag", "source"];
+    const known = ["type", "name", "path", "tagline", "description", "category", "tags", "author", "license", "verified", "flag", "source"];
     for (const k of Object.keys(it)) if (!known.includes(k)) errors.push(`${at}: clave desconocida ${k}`);
     if (!ITEM_TYPES.includes(it.type as string)) { errors.push(`${at}.type: skill o blueprint (tipo)`); continue; }
     if (typeof it.name !== "string" || !SLUG.test(it.name)) errors.push(`${at}.name: slug en minúsculas, letras, números y guiones`);
@@ -55,10 +55,19 @@ export async function directoryItemsErrors(root: string): Promise<string[]> {
     if (seen.has(key)) errors.push(`${at}: ${key} repetido`);
     seen.add(key);
     if (typeof it.description !== "string" || it.description.length < 1) errors.push(`${at}.description: obligatoria`);
+    if (it.tagline !== undefined && !(typeof it.tagline === "string" && it.tagline.length >= 1 && it.tagline.length <= 100)) errors.push(`${at}.tagline: de 1 a 100 caracteres`);
     const dir = join(root, typeof it.path === "string" ? it.path : "\0");
     if (typeof it.path !== "string" || it.path.includes("..") || !existsSync(dir)) { errors.push(`${at}.path: ${String(it.path)} no existe`); continue; }
     const file = ITEM_FILE[it.type as string];
     if (!existsSync(join(dir, file))) errors.push(`${at}.path: ${it.path} no tiene ${file}`);
+    else if (it.type === "skill") {
+      const folder = it.path.split("/").pop();
+      if (it.name !== folder) errors.push(`${at}.name: tiene que ser el nombre de su carpeta (${String(folder)})`);
+      try {
+        const fm = parseFrontmatter(await readFile(join(dir, file), "utf8"));
+        if (fm.name !== it.name) errors.push(`${at}.name: el frontmatter de su SKILL.md dice ${fm.name}`);
+      } catch (e) { errors.push(`${at}: SKILL.md: ${(e as Error).message} (frontmatter)`); }
+    }
     errors.push(...metaErrors(at, { category: it.category, tags: it.tags ?? [], author: it.author, flag: it.flag, verified: it.verified, source: it.source, where: "item" }));
     errors.push(...await licenseErrors(at, it.license, dir));
   }
@@ -133,17 +142,17 @@ export async function buildDirectory(root: string, version: string, addedOf: (pa
   const { plugins, items } = await sources(root);
   const entries: DirectoryReleaseEntry[] = [];
   for (const p of plugins) {
-    const name = p.name as string, x = p["x-nouter"] as { verified: boolean; flag?: string; source?: { repo: string; commit: string } };
+    const name = p.name as string, x = p["x-nouter"] as { verified: boolean; tagline?: string; flag?: string; source?: { repo: string; commit: string } };
     const skillsDir = join(root, "plugins", name, "skills");
     const skills = existsSync(skillsDir) ? (await readdir(skillsDir)).filter((s) => existsSync(join(skillsDir, s, "SKILL.md"))).toSorted() : [];
     entries.push({ id: `plugin:${name}`, type: "plugin", name: typeof p.displayName === "string" ? p.displayName : name,
-      tagline: taglineOf(p.description as string), description: p.description as string, publisher: (p.author as { name: string }).name,
+      tagline: x.tagline ?? taglineOf(p.description as string), description: p.description as string, publisher: (p.author as { name: string }).name,
       verified: x.verified, categories: [p.category as DirectoryCategory, ...(p.tags as DirectoryCategory[] ?? [])],
       added: addedOf(`plugins/${name}`), ...(x.flag ? { flag: x.flag } : {}), path: `plugins/${name}`, skills, license: p.license as string,
       ...(x.source ? { source: x.source } : {}) });
   }
   for (const it of items) {
-    entries.push({ id: `${it.type}:${it.name}`, type: it.type, name: it.name, tagline: taglineOf(it.description), description: it.description,
+    entries.push({ id: `${it.type}:${it.name}`, type: it.type, name: it.name, tagline: it.tagline ?? taglineOf(it.description), description: it.description,
       publisher: it.author, verified: it.verified, categories: [it.category, ...it.tags], added: addedOf(it.path), ...(it.flag ? { flag: it.flag } : {}),
       path: it.path, license: it.license, ...(it.source ? { source: it.source } : {}) });
   }

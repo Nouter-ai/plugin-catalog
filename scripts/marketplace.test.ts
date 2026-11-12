@@ -99,3 +99,37 @@ test("taglineOf corta en la primera oración y a 100 caracteres con …", () => 
 test("el marketplace real del repo vale", async () => {
   assert.deepEqual(await marketplaceErrors(realRoot), []);
 });
+
+test("las claves del marketplace y de cada entrada están cerradas", async () => {
+  await falla([{ ...ok(), extra: 1 }], /clave desconocida extra/);
+  for (const k of ["displayName", "keywords", "homepage", "repository", "treeHash"]) {
+    assert.deepEqual(await marketplaceErrors(await repo([{ ...ok(), [k]: k === "keywords" ? ["a"] : "x" }])), [], k);
+  }
+  const root = await repo([ok()]);
+  await writeFile(join(root, ".claude-plugin/marketplace.json"), JSON.stringify({ name: "nouter", owner: { name: "Nouter" }, plugins: [ok()], otra: 1 }));
+  assert.match((await marketplaceErrors(root)).join(), /clave desconocida otra/);
+});
+
+test("se rechaza lo peligroso: hooks, bin/, mcpServers y lspServers, y credenciales o headers en .mcp.json", async () => {
+  await falla([{ ...ok(), hooks: {} }], /hooks/);
+  await falla([{ ...ok(), mcpServers: {} }], /mcpServers/);
+  await falla([{ ...ok(), lspServers: {} }], /lspServers/);
+  const con = async (rel: string, text: string) => {
+    const root = await repo([ok()]);
+    await mkdir(join(root, "plugins/sales", rel, ".."), { recursive: true });
+    await writeFile(join(root, "plugins/sales", rel), text);
+    return (await marketplaceErrors(root)).join(" | ");
+  };
+  const manifest = (extra: object) => JSON.stringify({ name: "sales", version: "1.0.0", ...extra });
+  assert.match(await con(".claude-plugin/plugin.json", manifest({ hooks: {} })), /hooks/);
+  assert.match(await con(".claude-plugin/plugin.json", manifest({ mcpServers: {} })), /mcpServers/);
+  assert.match(await con(".claude-plugin/plugin.json", manifest({ lspServers: {} })), /lspServers/);
+  assert.match(await con("hooks/hooks.json", "{}"), /hooks/);
+  assert.match(await con("bin/run", "#!/bin/sh"), /bin/);
+  assert.match(await con(".mcp.json", JSON.stringify({ mcpServers: { a: { type: "http", url: "https://u:p@mcp.example.com/mcp" } } })), /credenciales/);
+  assert.match(await con(".mcp.json", JSON.stringify({ mcpServers: { a: { type: "http", url: "https://mcp.example.com/mcp", headers: { Authorization: "x" } } } })), /headers/);
+});
+
+test("el name de un plugin es el de su carpeta", async () => {
+  await falla([{ ...ok(), source: "./plugins/otro" }], /source/);
+});

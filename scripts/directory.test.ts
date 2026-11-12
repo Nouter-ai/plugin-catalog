@@ -101,3 +101,8 @@ test("no puede haber plugin.json ni SKILL.md fuera de plugins/ y skills/: el OS 
   assert.match(errors, /scripts\/__fixtures__\/x.*fuera de plugins/);
   assert.match(errors, /docs\/y.*fuera de plugins/);
 });
+
+test("el name de un item es el de su carpeta y el del frontmatter de su SKILL.md", async () => {
+  await falla(await conItems([{ ...item(), name: "otro" }]), /carpeta|name/);
+  await falla(await conItems([item()], (r) => writeFile(join(r, "skills/skill-creator/SKILL.md"), "---\nname: otro\ndescription: d\n---\n")), /frontmatter/);
+});
