@@ -1,5 +1,5 @@
 // Ayuda de los tests: un repo temporal mínimo (el marketplace con solo delivery-salesforce, que es lo propio de Nouter, y
-// los archivos de .nouter), para romperlo de a una cosa sin copiar lo sembrado (decenas de MB).
+// los archivos de .nouter y de schema), para romperlo de a una cosa sin copiar lo sembrado (decenas de MB).
 
 import { cp, mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -17,6 +17,10 @@ export async function baseRepo(): Promise<string> {
   await mkdir(join(root, ".nouter"), { recursive: true });
   await writeFile(join(root, ".nouter/directory.json"), JSON.stringify({ items: [] }));
   await writeFile(join(root, ".nouter/featured.json"), JSON.stringify({}));
+  await mkdir(join(root, "schema"), { recursive: true });
+  await writeFile(join(root, "schema/editors.json"), JSON.stringify({ editors: [
+    { editorId: "nouter", kind: "nouter", name: "Nouter", verified: true },
+    { editorId: "anthropic", kind: "anthropic", name: "Anthropic", verified: true }] }, null, 2));
   return root;
 }
 

@@ -1,0 +1,16 @@
+{
+  "editors": [
+    {
+      "editorId": "nouter",
+      "kind": "nouter",
+      "name": "Nouter",
+      "verified": true
+    },
+    {
+      "editorId": "anthropic",
+      "kind": "anthropic",
+      "name": "Anthropic",
+      "verified": true
+    }
+  ]
+}
