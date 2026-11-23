@@ -15,3 +15,13 @@ jobs:
         with: { node-version: 24 }
       - run: npm test
       - run: node scripts/validate.ts
+      # La revisión de seguridad de lo que toca el cambio. Sin DIRECTORY_SCAN_URL el paso se saltea (sale 0); con el
+      # secreto puesto es obligatorio y fail-closed. La base es la rama destino en un pull request y el commit anterior en
+      # un push a main; un rango que no se puede calcular revisa todos los items.
+      - run: node scripts/scan.ts
+        env:
+          DIRECTORY_SCAN_URL: ${{ secrets.DIRECTORY_SCAN_URL }}
+          DIRECTORY_SCAN_CLIENT_ID: ${{ secrets.DIRECTORY_SCAN_CLIENT_ID }}
+          DIRECTORY_SCAN_CLIENT_SECRET: ${{ secrets.DIRECTORY_SCAN_CLIENT_SECRET }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
