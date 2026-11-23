@@ -10,7 +10,10 @@
 // (`scan-too-large`, `rate-limited`, `internal`, …) y un timeout son todos rojo — una falla nunca es una aprobación.
 //
 // El repo es público: la URL y el token de servicio de Access son secretos, nunca literales. Sin `DIRECTORY_SCAN_URL` el
-// paso imprime `revisión de seguridad sin configurar: se saltea` y sale 0 (el token lo aprovisiona otra pieza).
+// paso imprime `revisión de seguridad sin configurar: se saltea` y sale 0 (el token lo aprovisiona otra pieza). Un PR de
+// un fork no recibe los secretos, así que el salteo solo vale mientras la revisión no esté configurada: la variable de
+// repositorio `DIRECTORY_SCAN_ENABLED`, que los forks sí ven, en `true` convierte la falta de URL o de token en rojo, y
+// el merge no deja pasar un cambio que no se revisó.
 
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
@@ -37,6 +40,9 @@ export type ScanEnv = {
   url?: string;
   clientId?: string;
   clientSecret?: string;
+  /** La variable de repositorio `DIRECTORY_SCAN_ENABLED` (`"true"` la prende). Los secrets no llegan a un PR de un fork
+   *  y las variables sí: con esto en `true`, que falte la URL o el token es rojo, no un salteo. */
+  enabled?: string;
   /** El rango de commits del cambio. En un pull request la base es la rama destino y el head el commit de merge; en un
    *  push a main la base es el commit anterior. Sin los dos, o cuando git no puede calcular el rango, se revisan todos
    *  los items (el control reusa por hash, así que solo lo nuevo paga el modelo). */
@@ -241,20 +247,29 @@ async function reviewItem(
 const timeoutFailure = (timeoutMs: number): Review => ({ ok: false, reason: `la revisión de seguridad agotó el tiempo de espera (sin veredicto después de ${timeoutMs} ms)`, lines: [] });
 
 /**
- * El paso: del entorno a un código de salida y sus líneas. Sin `DIRECTORY_SCAN_URL` se saltea y sale 0; con la URL puesta,
- * es obligatorio y cualquier falla es rojo.
+ * El paso: del entorno a un código de salida y sus líneas. Sin `DIRECTORY_SCAN_URL` se saltea y sale 0, salvo con
+ * `DIRECTORY_SCAN_ENABLED=true`; con la URL puesta, es obligatorio y cualquier falla es rojo.
  */
 export async function runScan(env: ScanEnv, deps: { fetch?: typeof fetch; now?: () => number; sleep?: (ms: number) => Promise<void> } = {}): Promise<ScanResult> {
   const lines: string[] = [];
+  const enabled = env.enabled?.trim() === "true";
   const url = env.url?.trim();
   if (!url) {
+    // Un PR de un fork no recibe los secretos: con la revisión prendida, el salteo sería un verde falso (y el rojo
+    // llegaría recién en el push a main, después del merge). La variable de repositorio sí la ve un fork.
+    if (enabled) {
+      lines.push("la revisión de seguridad no corre en un PR de un fork: la corre un mantenedor (DIRECTORY_SCAN_URL no está disponible)");
+      return { code: 1, lines };
+    }
     lines.push("revisión de seguridad sin configurar: se saltea");
     return { code: 0, lines };
   }
   const clientId = env.clientId?.trim() ?? "";
   const clientSecret = env.clientSecret?.trim() ?? "";
   if (!clientId || !clientSecret) {
-    lines.push("revisión de seguridad mal configurada: DIRECTORY_SCAN_CLIENT_ID y DIRECTORY_SCAN_CLIENT_SECRET son obligatorios cuando DIRECTORY_SCAN_URL está puesta");
+    lines.push(enabled
+      ? "la revisión de seguridad no corre en un PR de un fork: la corre un mantenedor (DIRECTORY_SCAN_CLIENT_ID y DIRECTORY_SCAN_CLIENT_SECRET no están disponibles)"
+      : "revisión de seguridad mal configurada: DIRECTORY_SCAN_CLIENT_ID y DIRECTORY_SCAN_CLIENT_SECRET son obligatorios cuando DIRECTORY_SCAN_URL está puesta");
     return { code: 1, lines };
   }
 
@@ -305,6 +320,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     url: process.env.DIRECTORY_SCAN_URL,
     clientId: process.env.DIRECTORY_SCAN_CLIENT_ID,
     clientSecret: process.env.DIRECTORY_SCAN_CLIENT_SECRET,
+    enabled: process.env.DIRECTORY_SCAN_ENABLED,
     base: process.env.BASE_SHA,
     head: process.env.HEAD_SHA,
   });

@@ -16,10 +16,13 @@ jobs:
       - run: npm test
       - run: node scripts/validate.ts
       # La revisión de seguridad de lo que toca el cambio. Sin DIRECTORY_SCAN_URL el paso se saltea (sale 0); con el
-      # secreto puesto es obligatorio y fail-closed. La base es la rama destino en un pull request y el commit anterior en
-      # un push a main; un rango que no se puede calcular revisa todos los items.
+      # secreto puesto es obligatorio y fail-closed. Un PR de un fork no recibe secretos: con la variable de repositorio
+      # DIRECTORY_SCAN_ENABLED en true, que falte la URL o el token es rojo (la revisión la corre un mantenedor), nunca
+      # un verde. La base es la rama destino en un pull request y el commit anterior en un push a main; un rango que no
+      # se puede calcular revisa todos los items.
       - run: node scripts/scan.ts
         env:
+          DIRECTORY_SCAN_ENABLED: ${{ vars.DIRECTORY_SCAN_ENABLED }}
           DIRECTORY_SCAN_URL: ${{ secrets.DIRECTORY_SCAN_URL }}
           DIRECTORY_SCAN_CLIENT_ID: ${{ secrets.DIRECTORY_SCAN_CLIENT_ID }}
           DIRECTORY_SCAN_CLIENT_SECRET: ${{ secrets.DIRECTORY_SCAN_CLIENT_SECRET }}

@@ -66,6 +66,19 @@ test("sin DIRECTORY_SCAN_URL el paso no corre y sale 0", async () => {
   assert.deepEqual(r.lines, ["revisión de seguridad sin configurar: se saltea"]);
 });
 
+test("con la revisión prendida, un PR de un fork sin secretos es rojo y no un verde falso", async () => {
+  // Los secrets no llegan a un PR de un fork y la variable de repositorio sí: sin ella, este caso sería un salteo.
+  const sinUrl = await runScan({ enabled: "true" });
+  assert.equal(sinUrl.code, 1);
+  assert.match(sinUrl.lines.join("\n"), /no corre en un PR de un fork/);
+  const sinToken = await runScan({ enabled: "true", url: "http://127.0.0.1:1" });
+  assert.equal(sinToken.code, 1);
+  assert.match(sinToken.lines.join("\n"), /no corre en un PR de un fork/);
+  // Cualquier otro valor de la variable deja el comportamiento de siempre.
+  const apagada = await runScan({ enabled: "false" });
+  assert.equal(apagada.code, 0);
+});
+
 test("una URL sin el token de servicio es mala configuración, no un pase (fail-closed)", async () => {
   const r = await runScan({ url: "http://127.0.0.1:1", clientId: "", clientSecret: "" });
   assert.equal(r.code, 1);
@@ -209,6 +222,7 @@ test("un rango que no se puede calcular cae a todos los items (null), y un archi
 test("el CI corre la revisión con el token de servicio y el rango de cambios del evento", async () => {
   const ci = await readFile(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
   assert.match(ci, /node scripts\/scan\.ts/);
+  assert.match(ci, /DIRECTORY_SCAN_ENABLED: \$\{\{ vars\.DIRECTORY_SCAN_ENABLED \}\}/);
   assert.match(ci, /DIRECTORY_SCAN_URL: \$\{\{ secrets\.DIRECTORY_SCAN_URL \}\}/);
   assert.match(ci, /DIRECTORY_SCAN_CLIENT_ID: \$\{\{ secrets\.DIRECTORY_SCAN_CLIENT_ID \}\}/);
   assert.match(ci, /DIRECTORY_SCAN_CLIENT_SECRET: \$\{\{ secrets\.DIRECTORY_SCAN_CLIENT_SECRET \}\}/);
