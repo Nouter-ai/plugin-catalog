@@ -12,6 +12,9 @@ del sistema *Nouter Directory*, en el release que fija el plano de control.
 
 Además, 17 skills sueltas de [`anthropics/skills`](https://github.com/anthropics/skills) (`.nouter/directory.json`).
 
+Los editores son `Nouter` (para `delivery-salesforce`) y `Anthropic` (para los otros 15 plugins y las 17 skills); la lista
+está en [`schema/editors.json`](schema/editors.json).
+
 ## Qué entra
 
 Solo con licencia libre (`Apache-2.0`, `MIT`, `BSD-2-Clause`, `BSD-3-Clause` o `ISC`), con su archivo de licencia en la
@@ -37,6 +40,21 @@ este (en una carpeta de datos) en esos commits. Correrlo de nuevo no duplica. Tr
 - **Skills y blueprints sueltos:** `.nouter/directory.json`, `{ items: [{ type, name, path, description, category, tags,
   author, license, verified, tagline?, flag?, source? }] }`. `path` es la carpeta con su `SKILL.md` o `blueprint.json`.
 - **Destacados:** `.nouter/featured.json`, `{ skills?: "skill:<name>", plugins?: "plugin:<name>" }`, el banner de cada pestaña.
+
+### Editores
+
+`schema/editors.json` es la copia pública de los editores del Directory: quién publica, con solo cuatro datos por editor:
+`editorId` (el slug estable), `kind` (`nouter`, `anthropic` o `partner`), `name` —el `publisher` que usa el índice— y
+`verified`. Hoy son `nouter` y `anthropic`, los dos verificados.
+
+El CI cruza cada entrada del índice —cada plugin y cada skill suelta— contra su editor: el `publisher` tiene que ser el
+`name` de un editor, el `verified` de la entrada tiene que coincidir con el del editor (en las dos direcciones) y un item
+de un `partner` exige un editor verificado. Un editor sin entradas no es un error: un partner puede estar registrado y no
+haber publicado nada.
+
+El archivo lo escribe el plano de control en el mismo PR que publica un item. Los datos sensibles de
+un editor —el contacto de seguridad y el acuerdo— no viven en este repo: son del plano de control y no entran a esta
+copia.
 
 ## Releases
 

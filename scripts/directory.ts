@@ -8,6 +8,7 @@ import { existsSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { DirectoryCategory } from "./categories.ts";
+import { editorsErrors } from "./editors.ts";
 import { parseFrontmatter, taglineOf } from "./frontmatter.ts";
 import { isObj, licenseErrors, marketplaceErrors, metaErrors } from "./marketplace.ts";
 
@@ -142,9 +143,10 @@ export async function duplicateSkillErrors(root: string): Promise<string[]> {
     .map((s) => `${[...s].toSorted().join(" y ")}: traen un SKILL.md idéntico; el OS guarda una sola copia y uno llegaría sin esa skill`);
 }
 
-// Todo lo que el CI exige del repo: el marketplace, los items sueltos y los destacados.
+// Todo lo que el CI exige del repo: el marketplace, los items sueltos, los editores y los destacados.
 export async function validateRepo(root: string): Promise<string[]> {
-  const errors = [...await marketplaceErrors(root), ...await directoryItemsErrors(root), ...await strayErrors(root), ...await duplicateSkillErrors(root)];
+  const errors = [...await marketplaceErrors(root), ...await directoryItemsErrors(root), ...await editorsErrors(root),
+    ...await strayErrors(root), ...await duplicateSkillErrors(root)];
   const { plugins, items } = await sources(root);
   const ids = new Map<string, { flag?: string }>([
     ...plugins.map((p) => [`plugin:${String(p.name)}`, { flag: (p["x-nouter"] as { flag?: string } | undefined)?.flag }] as const),

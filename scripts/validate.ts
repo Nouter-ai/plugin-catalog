@@ -1,4 +1,4 @@
-// El CI: el marketplace, los items sueltos y los destacados valen. Uso: node scripts/validate.ts
+// El CI: el marketplace, los items sueltos, los editores y los destacados valen. Uso: node scripts/validate.ts
 
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
