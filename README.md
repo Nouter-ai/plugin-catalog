@@ -19,6 +19,10 @@ está en [`schema/editors.json`](schema/editors.json).
 
 Solo con licencia libre (`Apache-2.0`, `MIT`, `BSD-2-Clause`, `BSD-3-Clause` o `ISC`), con su archivo de licencia en la
 carpeta del item (`LICENSE*` o `LICENSES/`) y, si se copió de otro repo, su origen (`x-nouter.source`: repo y commit).
+Además, `licenses` suma una licencia de la lista cerrada (hoy solo `OFL-1.1`) cuando el item trae archivos de fuente: va en
+`x-nouter.licenses` de un plugin y en la raíz de un item suelto, y exige al menos una fuente y el texto de la SIL OFL 1.1
+de cada familia (`<Familia>-OFL.txt`). Es la de las 29 familias de `canvas-design`, junto a su Apache-2.0; el índice del
+Directory sigue llevando una sola licencia.
 
 ## La siembra de lo libre de Anthropic
 
@@ -28,8 +32,20 @@ tampoco `partner-built/*`). Cada item lleva su licencia (la del root, si el plug
 el repo y el commit (`877a617` de `knowledge-work-plugins` y `2c5958e` de `skills`). Un servidor stdio corre un comando local: el OS de Nouter no lo ejecuta y el CI solo acepta http. A un plugin que trae stdio y http se le
 quitan los stdio; uno que trae **solo** stdio no entra (`pdf-viewer`: depende de un servidor local, que Nouter no corre). Tampoco entran `cowork-plugin-management` (pide el entorno de la app Cowork) ni la skill `academy-guide` (recomienda Claude Academy y en Nouter el modelo puede no ser Claude): la lista, con su motivo, es `EXCLUDED` en `scripts/import-anthropic.ts`. Cada plugin y skill sembrado lleva un `tagline` curado (`x-nouter.tagline` o `tagline`, hasta 100 caracteres); sin él, la tarjeta usa la primera oración de la descripción.
 
-Se volvió a generar con `node scripts/import-anthropic.ts <knowledge-work-plugins> <skills>`, con los dos repos clonados afuera de
-este (en una carpeta de datos) en esos commits. Correrlo de nuevo no duplica. Traer versiones nuevas es del backlog del Directory.
+El commit del que sale cada copia es un dato, `scripts/anthropic-lock.json` (`kwp` y `skills`): es el default del importador
+y lo que exige el CLI. Se volvió a generar con `node scripts/import-anthropic.ts <knowledge-work-plugins> <skills>`, con los
+dos repos clonados afuera de este (en una carpeta de datos) en esos commits. Correrlo de nuevo no duplica.
+
+Traer una versión nueva es del job del reloj de nouter (`directory-seed-sync.yml`), que corre
+`npm run sync:anthropic -- --clones <dir> --informe <archivo>`: clona los dos upstream, compara los HEAD con el lock, importa
+con este mismo importador, deja el informe para el PR y **mueve el lock solo si los bytes copiados cambiaron**. No mergea ni
+publica: abre (o actualiza) un PR en `sync/anthropic` con los tests y el `validate.ts` ya corridos, y una persona lo revisa,
+mide los `.mcp.json` que cambiaron y lo mergea; el release y `directory:update` siguen a mano. Si un item de las tablas se fue
+del upstream, una licencia cambió o un pin ya no existe, el script frena cerrado (sale 1) sin escribir nada.
+
+La OFL de las fuentes de `canvas-design` se declara además de su Apache-2.0. Dos familias del upstream no traen su texto
+(`IBMPlexSerif` e `InstrumentSerif`): viajan en `scripts/font-licenses/`, tal como los publican sus proyectos, y el importador
+los repone después de copiar la skill. Una familia nueva sin texto la frena el CI.
 
 ## Formato
 
