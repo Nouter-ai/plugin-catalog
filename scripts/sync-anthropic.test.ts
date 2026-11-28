@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { importAnthropic } from "./import-anthropic.ts";
-import { syncAnthropic } from "./sync-anthropic.ts";
+import { actualizarClon, syncAnthropic } from "./sync-anthropic.ts";
 import { anthropicUpstream, baseRepo } from "./test-util.ts";
 
 const APACHE = await readFile(new URL("../LICENSE", import.meta.url), "utf8");
@@ -94,6 +95,27 @@ test("una skill que ya no trae su licencia frena cerrado: sale 1, sin PR y sin e
   assert.deepEqual(JSON.parse(await readFile(lock, "utf8")), VIEJO);
   assert.equal(await readFile(join(out, ".nouter/directory.json"), "utf8"), items);
   assert.match(await reporte(), /alpha[^\n]*licencia|licencia[^\n]*alpha/i);
+});
+
+test("un clon que ya existe se trae el tip de la rama por defecto: nunca se queda en el HEAD viejo", async () => {
+  const origen = await mkdtemp(join(tmpdir(), "origen-"));
+  const git = (dir: string, ...args: string[]) => execFileSync("git", ["-C", dir, ...args], { encoding: "utf8", stdio: "pipe" }).trim();
+  await git(origen, "init", "-q", "-b", "main");
+  const commit = async (texto: string) => {
+    await writeFile(join(origen, "README.md"), texto);
+    await git(origen, "add", "README.md");
+    await git(origen, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", texto);
+    return git(origen, "rev-parse", "HEAD");
+  };
+  const viejo = await commit("a");
+  const destino = join(await mkdtemp(join(tmpdir(), "clon-")), "kwp");
+  await actualizarClon(`file://${origen}`, destino, viejo);
+  assert.equal(git(destino, "rev-parse", "HEAD"), viejo);
+  const nuevo = await commit("b");
+  // El pin del lock sigue existiendo: el clon reusado tiene que ver el tip de la rama por defecto, no el HEAD del día que se clonó.
+  await actualizarClon(`file://${origen}`, destino, viejo);
+  assert.equal(git(destino, "rev-parse", "HEAD"), nuevo, "un clon reusado ve el commit nuevo");
+  await assert.rejects(actualizarClon(`file://${origen}`, destino, "0".repeat(40)), /0{40}|remote ref/i);
 });
 
 test("un pin que el upstream no tiene sale 1 con el SHA y no escribe", async () => {

@@ -29,13 +29,21 @@ export interface SyncOptions {
   head?: (dir: string) => Promise<string>;
 }
 
-const clonarGit = async (repo: string, destino: string, pin: string): Promise<void> => {
+// El clon de los upstream: uno nuevo queda en el tip; uno que ya existe se trae el tip de la rama por defecto (si no, su
+// HEAD se queda en el día que se clonó y el job nunca ve los commits nuevos). Después se comprueba el pin del lock, que
+// tiene que seguir existiendo en el upstream (un force-push lo borra), antes de importar nada.
+export async function actualizarClon(url: string, destino: string, pin: string): Promise<void> {
   if (!existsSync(join(destino, ".git"))) {
-    execFileSync("git", ["clone", "--quiet", "--depth", "1", `https://github.com/${repo}.git`, destino], { stdio: "inherit" });
+    execFileSync("git", ["clone", "--quiet", "--depth", "1", url, destino], { stdio: "inherit" });
+  } else {
+    execFileSync("git", ["-C", destino, "fetch", "--quiet", "--depth", "1", "origin", "HEAD"], { stdio: "inherit" });
+    execFileSync("git", ["-C", destino, "reset", "--quiet", "--hard", "FETCH_HEAD"], { stdio: "inherit" });
   }
-  // El pin del lock tiene que seguir existiendo en el upstream (un force-push lo borra): se trae antes de importar nada.
   execFileSync("git", ["-C", destino, "fetch", "--quiet", "--depth", "1", "origin", pin], { stdio: "inherit" });
-};
+}
+
+const clonarGit = (repo: string, destino: string, pin: string): Promise<void> =>
+  actualizarClon(`https://github.com/${repo}.git`, destino, pin);
 
 const headGit = async (dir: string): Promise<string> =>
   execFileSync("git", ["-C", dir, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
