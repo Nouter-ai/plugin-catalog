@@ -120,6 +120,26 @@ async function dropStdioServers(to: string): Promise<void> {
   else await write(file, wrapped ? { ...raw, mcpServers: kept } : kept);
 }
 
+// El upstream no trae el texto de estas dos familias (tampoco en anthropics/skills): viajan acá, tal como los publican sus
+// proyectos, y el importador los repone después de copiar la skill. Una familia nueva sin texto la frena el CI.
+export const FONT_LICENSES_DIR = fileURLToPath(new URL("./font-licenses/", import.meta.url));
+export const FONT_LICENSES: Readonly<Record<string, string>> = {
+  IBMPlexSerif: "IBMPlexSerif-OFL.txt",
+  InstrumentSerif: "InstrumentSerif-OFL.txt",
+};
+const FUENTE = /\.(?:ttf|otf|woff2?)$/i;
+
+async function reponerTextosDeFuentes(dir: string): Promise<void> {
+  for (const e of await readdir(dir, { withFileTypes: true })) {
+    const p = join(dir, e.name);
+    if (e.isDirectory()) { await reponerTextosDeFuentes(p); continue; }
+    if (!FUENTE.test(e.name)) continue;
+    const familia = e.name.replace(FUENTE, "").split("-")[0];
+    const texto = FONT_LICENSES[familia];
+    if (texto && !existsSync(join(dir, texto))) cpSync(join(FONT_LICENSES_DIR, texto), join(dir, texto));
+  }
+}
+
 const copyDir = (from: string, to: string) => {
   rmSync(to, { recursive: true, force: true });
   cpSync(from, to, { recursive: true, filter: (src) => !/(^|\/)(\.git|node_modules|\.DS_Store)(\/|$)/.test(src) });
@@ -178,6 +198,7 @@ export async function importAnthropic(o: ImportOptions): Promise<number> {
     const to = join(o.out, "skills", row.name);
     if (license !== row.license) { rmSync(to, { recursive: true, force: true }); continue; }
     copyDir(from, to);
+    await reponerTextosDeFuentes(to);
     const fm = parseFrontmatter(await readFile(join(from, "SKILL.md"), "utf8"));
     const tagline = row.tagline ?? (dir.items as any[]).find((x) => x.type === "skill" && x.name === row.name)?.tagline;
     skills.push({ type: "skill", name: row.name, path: `skills/${row.name}`, ...(tagline ? { tagline } : {}), description: fm.description, category: row.category, tags: row.tags,

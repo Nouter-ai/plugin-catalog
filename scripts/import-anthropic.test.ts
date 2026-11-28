@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtemp, readFile, stat, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -162,6 +162,34 @@ test("licenses va a x-nouter en el plugin y a la raíz del item en la skill; sin
   await importAnthropic({ kwp: fx.kwp, skills: fx.skills, out: sin, commits: COMMITS, tables: TABLAS });
   assert.ok(!("licenses" in (await json(join(sin, MARKETPLACE))).plugins.find((p: any) => p.name === "sales")["x-nouter"]));
   assert.ok(!("licenses" in (await json(join(sin, ITEMS))).items[0]));
+});
+
+test("las dos OFL que el upstream no trae vienen de scripts/font-licenses, tal como las publican sus proyectos", async () => {
+  const plex = await readFile(new URL("./font-licenses/IBMPlexSerif-OFL.txt", import.meta.url), "utf8");
+  const serif = await readFile(new URL("./font-licenses/InstrumentSerif-OFL.txt", import.meta.url), "utf8");
+  assert.match(plex, /Copyright © 2017 IBM Corp\. with Reserved Font Name "Plex"/);
+  assert.match(plex, /SIL OPEN FONT LICENSE Version 1\.1/);
+  assert.match(serif, /Copyright 2022 The Instrument Serif Project Authors/);
+  assert.match(serif, /SIL OPEN FONT LICENSE Version 1\.1/);
+});
+
+test("después de copiar una skill, repone el texto de las dos familias que no lo traen y deja las demás como están", async () => {
+  const out = await destino();
+  const fx = await anthropicFixtures();
+  const fuentes = join(fx.skills, "skills/alpha/canvas-fonts");
+  await mkdir(fuentes, { recursive: true });
+  for (const f of ["IBMPlexSerif-Regular.ttf", "IBMPlexSerif-Bold.ttf", "InstrumentSerif-Italic.ttf", "Otra-Regular.ttf"]) {
+    await writeFile(join(fuentes, f), "");
+  }
+  const tablas = { plugins: [], skills: [{ ...TABLAS.skills[0], licenses: ["OFL-1.1"] }] };
+  await importAnthropic({ kwp: fx.kwp, skills: fx.skills, out, commits: COMMITS, tables: tablas });
+  const copiadas = join(out, "skills/alpha/canvas-fonts");
+  assert.equal(await readFile(join(copiadas, "IBMPlexSerif-OFL.txt"), "utf8"),
+    await readFile(new URL("./font-licenses/IBMPlexSerif-OFL.txt", import.meta.url), "utf8"));
+  assert.equal(await readFile(join(copiadas, "InstrumentSerif-OFL.txt"), "utf8"),
+    await readFile(new URL("./font-licenses/InstrumentSerif-OFL.txt", import.meta.url), "utf8"));
+  // Una familia que no está en el mapa queda sin texto: el CI la frena hasta que alguien lo agregue.
+  await assert.rejects(stat(join(copiadas, "Otra-OFL.txt")));
 });
 
 test("correrlo dos veces no duplica nada", async () => {
