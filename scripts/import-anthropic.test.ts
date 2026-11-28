@@ -1,11 +1,14 @@
 import assert from "node:assert/strict";
-import { readFile, stat } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
+import { mkdtemp, readFile, stat, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { CATEGORIES } from "./categories.ts";
 import { validateRepo } from "./directory.ts";
 import { parseFrontmatter } from "./frontmatter.ts";
-import { EXCLUDED, importAnthropic, PLUGINS, SKILLS } from "./import-anthropic.ts";
+import { EXCLUDED, importAnthropic, leerLock, PLUGINS, SKILLS } from "./import-anthropic.ts";
 import { anthropicFixtures, baseRepo } from "./test-util.ts";
 
 const json = async (p: string) => JSON.parse(await readFile(p, "utf8"));
@@ -27,7 +30,10 @@ test("las tablas: 15 plugins y 17 skills, sin pdf-viewer, cowork-plugin-manageme
   assert.match(EXCLUDED.find((x) => x.name === "pdf-viewer")!.reason, /stdio/);
   assert.match(EXCLUDED.find((x) => x.name === "cowork-plugin-management")!.reason, /Cowork/);
   assert.match(EXCLUDED.find((x) => x.name === "academy-guide")!.reason, /Claude Academy/);
-  assert.deepEqual(EXCLUDED.map((x) => `${x.type}:${x.name}`).toSorted(), ["plugin:cowork-plugin-management", "plugin:pdf-viewer", "skill:academy-guide"]);
+  // doc-coauthoring queda afuera por no tener licencia, y por eso está en la lista: si no, el job la vería como nueva cada día.
+  assert.deepEqual(EXCLUDED.find((x) => x.name === "doc-coauthoring")!.type, "skill");
+  assert.match(EXCLUDED.find((x) => x.name === "doc-coauthoring")!.reason, /licencia/i);
+  assert.deepEqual(EXCLUDED.map((x) => `${x.type}:${x.name}`).toSorted(), ["plugin:cowork-plugin-management", "plugin:pdf-viewer", "skill:academy-guide", "skill:doc-coauthoring"]);
   for (const x of EXCLUDED) assert.ok(!PLUGINS.some((p) => p.name === x.name) && !SKILLS.some((k) => k.name === x.name), x.name);
   // Cada fila sembrada trae su tagline curado, corto y para una persona (no la instrucción al modelo de la descripción).
   for (const row of [...PLUGINS, ...SKILLS]) assert.ok(row.tagline && row.tagline.length <= 100 && !/^(Use this|Stop and check|After you)/.test(row.tagline), row.name);
@@ -45,12 +51,75 @@ test("las tablas: 15 plugins y 17 skills, sin pdf-viewer, cowork-plugin-manageme
   assert.equal(new Set(names).size, 17);
 });
 
+// Las carpetas de los dos upstream en los pins del lock (877a617b y 2c5958ec, medidos el 2026-11-28). Con las tablas
+// inyectadas, cada una tiene que estar decidida: en la tabla de lo que entra o en EXCLUDED con su motivo. Lo que aparezca
+// mañana no está acá; el job lo informa como nuevo y una persona decide.
+const UPSTREAM_SKILLS = ["academy-guide", "algorithmic-art", "brand-guidelines", "canvas-design", "claude-api", "discernment-nudge",
+  "doc-coauthoring", "docx", "frontend-design", "internal-comms", "mcp-builder", "pdf", "pptx", "skill-creator", "slack-gif-creator",
+  "theme-factory", "web-artifacts-builder", "webapp-testing", "xlsx"];
+const UPSTREAM_PLUGINS = ["bio-research", "cowork-plugin-management", "customer-support", "data", "design", "engineering",
+  "enterprise-search", "finance", "human-resources", "legal", "marketing", "operations", "pdf-viewer", "product-management",
+  "productivity", "sales", "small-business"];
+
+test("EXCLUDED más las tablas cubren cada carpeta del upstream: ninguna queda sin decidir", () => {
+  assert.equal(UPSTREAM_SKILLS.length, 19);
+  assert.equal(UPSTREAM_PLUGINS.length, 17);
+  const decididas = (tipo: "plugin" | "skill", tablas: { name: string }[]) =>
+    new Set([...tablas.map((x) => x.name), ...EXCLUDED.filter((x) => x.type === tipo).map((x) => x.name)]);
+  assert.deepEqual(UPSTREAM_SKILLS.filter((n) => !decididas("skill", SKILLS).has(n)), []);
+  assert.deepEqual(UPSTREAM_PLUGINS.filter((n) => !decididas("plugin", PLUGINS).has(n)), []);
+});
+
 const COMMITS = { kwp: "877a617b435ee2edfb002d9a3703c0a1a03aa1ba", skills: "2c5958ecac7cee2b583967a2c4981d0f4a75c579" };
 const TABLAS = {
   plugins: [{ name: "sales", category: "sales" as const, tags: ["marketing" as const] }, { name: "local", category: "engineering" as const, tags: [] }, { name: "engineering", category: "engineering" as const, tags: [] }],
   skills: [{ name: "alpha", category: "engineering" as const, tags: [], license: "Apache-2.0" as const }, { name: "beta", category: "design-media" as const, tags: [], license: "Apache-2.0" as const }],
 };
 const destino = baseRepo;
+
+const MARKETPLACE = ".claude-plugin/marketplace.json";
+const ITEMS = ".nouter/directory.json";
+const commitDe = (m: any, name: string) => m.plugins.find((p: any) => p.name === name)["x-nouter"].source.commit;
+
+test("los pins por defecto salen del lock del repo, y otro lock cambia el source.commit que se escribe", async () => {
+  const lock = await leerLock();
+  assert.match(lock.kwp, /^[0-9a-f]{40}$/);
+  assert.match(lock.skills, /^[0-9a-f]{40}$/);
+  const fx = await anthropicFixtures();
+
+  const out = await destino();
+  await importAnthropic({ kwp: fx.kwp, skills: fx.skills, out, tables: TABLAS });
+  const m = await json(join(out, MARKETPLACE));
+  assert.equal(commitDe(m, "sales"), lock.kwp, "sin commits, el default es el del lock");
+  assert.equal((await json(join(out, ITEMS))).items[0].source.commit, lock.skills);
+
+  // El lock es un dato: si cambia, lo que se escribe cambia con él.
+  const otro = join(await mkdtemp(join(tmpdir(), "lock-")), "anthropic-lock.json");
+  const pins = { kwp: "a".repeat(40), skills: "b".repeat(40) };
+  await writeFile(otro, JSON.stringify(pins));
+  const out2 = await destino();
+  await importAnthropic({ kwp: fx.kwp, skills: fx.skills, out: out2, tables: TABLAS, lock: otro });
+  assert.equal(commitDe(await json(join(out2, MARKETPLACE)), "sales"), pins.kwp);
+  assert.equal((await json(join(out2, ITEMS))).items[0].source.commit, pins.skills);
+});
+
+test("el CLI exige los clones en los commits del lock, no en los que estaban en el código", async () => {
+  const git = async (...args: string[]) => execFileSync("git", args, { encoding: "utf8", stdio: "pipe" });
+  const repo = await mkdtemp(join(tmpdir(), "git-"));
+  await git("-C", repo, "init", "-q");
+  await git("-C", repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "--allow-empty", "-qm", "x");
+  const script = fileURLToPath(new URL("./import-anthropic.ts", import.meta.url));
+  const out = await destino();
+  let salida = "";
+  try {
+    execFileSync(process.execPath, [script, repo, repo, out], { encoding: "utf8", stdio: "pipe" });
+  } catch (e) {
+    salida = `${(e as { stdout?: string }).stdout ?? ""}${(e as { stderr?: string }).stderr ?? ""}`;
+  }
+  const { kwp } = await leerLock();
+  assert.match(salida, new RegExp(kwp), "el mensaje nombra el pin del lock");
+  assert.deepEqual(await json(join(out, ITEMS)), { items: [] }, "no escribió nada");
+});
 
 test("importAnthropic copia lo libre, completa la licencia, omite lo que no la trae y conserva lo propio", async () => {
   const out = await destino();

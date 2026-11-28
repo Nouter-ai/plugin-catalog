@@ -5,7 +5,7 @@
 //
 // Uso (los repos de Anthropic se clonan afuera, en una carpeta de datos, y se pasan como argumentos):
 //   node scripts/import-anthropic.ts <knowledge-work-plugins> <skills> [<repo destino>]
-// Los clones tienen que estar en los commits fijados abajo. Correrlo de nuevo no duplica nada.
+// Los clones tienen que estar en los commits de `scripts/anthropic-lock.json`. Correrlo de nuevo no duplica nada.
 
 import { execFileSync } from "node:child_process";
 import { cpSync, existsSync, rmSync } from "node:fs";
@@ -18,8 +18,18 @@ import { licenseOf } from "./marketplace.ts";
 
 export const KWP_REPO = "anthropics/knowledge-work-plugins";
 export const SKILLS_REPO = "anthropics/skills";
-export const KWP_COMMIT = "877a617b435ee2edfb002d9a3703c0a1a03aa1ba"; // 2026-11-10
-export const SKILLS_COMMIT = "2c5958ecac7cee2b583967a2c4981d0f4a75c579"; // 2026-11-06
+
+// El pin de cada upstream es un dato (SS5): el default del importador, lo que exige el CLI y lo que mueve el job del reloj.
+// Va al lado del script, no al cwd: el workflow corre el script desde el catálogo clonado y el lock tiene que ser el suyo.
+export const LOCK_FILE = fileURLToPath(new URL("./anthropic-lock.json", import.meta.url));
+export interface AnthropicLock { kwp: string; skills: string }
+
+export async function leerLock(file = LOCK_FILE): Promise<AnthropicLock> {
+  const lock = JSON.parse(await readFile(file, "utf8")) as Partial<AnthropicLock>;
+  const hex = (v: unknown): v is string => typeof v === "string" && /^[0-9a-f]{40}$/.test(v);
+  if (!hex(lock.kwp) || !hex(lock.skills)) throw new Error(`${file}: el lock es { kwp, skills } con los dos commits en 40 hex`);
+  return { kwp: lock.kwp, skills: lock.skills };
+}
 
 export interface PluginRow { name: string; category: DirectoryCategory; tags: DirectoryCategory[]; tagline?: string }
 export interface SkillRow extends PluginRow { license: "Apache-2.0" }
@@ -52,6 +62,7 @@ export const EXCLUDED: Excluded[] = [
   { type: "plugin", name: "pdf-viewer", reason: `${STDIO_REASON}: su skill dice «You have access to a local PDF server»` },
   { type: "plugin", name: "cowork-plugin-management", reason: "pide el entorno de la app Cowork, que Nouter no tiene" },
   { type: "skill", name: "academy-guide", reason: "le dice al modelo que recomiende Claude Academy, y en Nouter el modelo puede no ser Claude" },
+  { type: "skill", name: "doc-coauthoring", reason: "sin licencia: no entra" },
 ];
 
 export const SKILLS: SkillRow[] = [
@@ -76,7 +87,8 @@ export const SKILLS: SkillRow[] = [
 
 export interface ImportOptions {
   kwp: string; skills: string; out: string;
-  commits?: { kwp: string; skills: string };
+  commits?: AnthropicLock;
+  lock?: string; // el archivo del que salen los pins si no se pasan `commits` (default: scripts/anthropic-lock.json)
   tables?: { plugins: PluginRow[]; skills: SkillRow[] };
   excluded?: Excluded[];
 }
@@ -113,7 +125,7 @@ const copyDir = (from: string, to: string) => {
 };
 
 export async function importAnthropic(o: ImportOptions): Promise<number> {
-  const commits = o.commits ?? { kwp: KWP_COMMIT, skills: SKILLS_COMMIT };
+  const commits = o.commits ?? await leerLock(o.lock);
   const tables = o.tables ?? { plugins: PLUGINS, skills: SKILLS };
   const marketplaceFile = join(o.out, ".claude-plugin/marketplace.json");
   const itemsFile = join(o.out, ".nouter/directory.json");
@@ -180,8 +192,9 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const [kwp, skills, out] = process.argv.slice(2);
   if (!kwp || !skills) throw new Error("uso: node scripts/import-anthropic.ts <knowledge-work-plugins> <skills> [<repo destino>]");
   const head = (dir: string) => execFileSync("git", ["-C", dir, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
-  if (head(kwp) !== KWP_COMMIT) throw new Error(`${kwp} tiene que estar en ${KWP_COMMIT} (git -C ${kwp} checkout ${KWP_COMMIT})`);
-  if (head(skills) !== SKILLS_COMMIT) throw new Error(`${skills} tiene que estar en ${SKILLS_COMMIT} (git -C ${skills} checkout ${SKILLS_COMMIT})`);
+  const lock = await leerLock();
+  if (head(kwp) !== lock.kwp) throw new Error(`${kwp} tiene que estar en ${lock.kwp} (git -C ${kwp} checkout ${lock.kwp})`);
+  if (head(skills) !== lock.skills) throw new Error(`${skills} tiene que estar en ${lock.skills} (git -C ${skills} checkout ${lock.skills})`);
   const root = out ? resolve(out) : resolve(fileURLToPath(import.meta.url), "../..");
   const n = await importAnthropic({ kwp: resolve(kwp), skills: resolve(skills), out: root });
   console.log(`importados: ${n} (${PLUGINS.length} plugins como máximo y ${SKILLS.length} skills esperados)`);
