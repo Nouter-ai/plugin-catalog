@@ -45,6 +45,20 @@ test("sin cambios no escribe: el lock queda igual, el árbol no se toca y el inf
   assert.match(await reporte(), /sin cambios/i);
 });
 
+test("con los pins iguales no importa: un seed que difiere de lo que daría el importador queda intacto", async () => {
+  const { out, lock, sync, reporte } = await armado();
+  // El seed commiteado difiere de lo que produce el importador (por ejemplo, alguien tocó el archivo a mano).
+  const archivo = join(out, "skills/alpha/SKILL.md");
+  const aMano = "---\nname: alpha\ndescription: The alpha skill.\n---\n\nTocado a mano.\n";
+  await writeFile(archivo, aMano);
+  const mapa = await readFile(join(out, ".claude-plugin/marketplace.json"), "utf8");
+  assert.equal(await sync(VIEJO), 0);
+  assert.equal(await readFile(archivo, "utf8"), aMano, "sin cambios no importa: el árbol queda como está");
+  assert.equal(await readFile(join(out, ".claude-plugin/marketplace.json"), "utf8"), mapa);
+  assert.deepEqual(JSON.parse(await readFile(lock, "utf8")), VIEJO);
+  assert.match(await reporte(), /sin cambios/i);
+});
+
 test("con cambios copia, mueve el lock e informa el item, la versión y los servidores del .mcp.json", async () => {
   const { out, lock, sync, reporte } = await armado(async (fx) => {
     await writeFile(join(fx.kwp, "sales/.claude-plugin/plugin.json"), JSON.stringify({ name: "sales", version: "1.1.0", description: "The sales plugin." }));

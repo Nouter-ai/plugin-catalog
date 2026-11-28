@@ -135,6 +135,15 @@ export async function syncAnthropic(o: SyncOptions): Promise<number> {
     await clonar(SKILLS_REPO, fx.skills, lock.skills);
     const nuevo: AnthropicLock = { kwp: await head(fx.kwp), skills: await head(fx.skills) };
 
+    lineas.push(`- knowledge-work-plugins: ${lock.kwp} → ${nuevo.kwp}`, `- skills: ${lock.skills} → ${nuevo.skills}`, "");
+
+    // Sin pines nuevos no hay nada que hacer, y el corte va antes de importar: «sin cambios» no toca el árbol ni aunque el
+    // seed commiteado no coincida con lo que daría el importador (eso lo arregla una persona, no un job que dice no escribir).
+    if (nuevo.kwp === lock.kwp && nuevo.skills === lock.skills) {
+      lineas.push("## Lo que hizo el job", "", "Sin cambios: los dos upstream están en los pines del lock y no toca el árbol ni el lock.");
+      return informe(0);
+    }
+
     const problemas = await preflight(fx, tables);
     if (problemas.length) {
       lineas.push("El job no pudo traer el seed:", "", ...problemas.map((p) => `- ${p}`), "");
@@ -161,19 +170,12 @@ export async function syncAnthropic(o: SyncOptions): Promise<number> {
     const arbolIgual = [...antes].every(([k, v]) => despues.get(k) === v);
     const soloPines = sinPines(mapaDespues) === sinPines(mapaAntes) && sinPines(itemsDespues) === sinPines(itemsAntes);
 
-    lineas.push(`- knowledge-work-plugins: ${lock.kwp} → ${nuevo.kwp}`, `- skills: ${lock.skills} → ${nuevo.skills}`, "");
-
     const nuevos = await loNuevo(fx, tables, excluded);
     if (nuevos.plugins.length || nuevos.skills.length) {
       lineas.push("## Lo nuevo del upstream (no entra solo: la categoría, el tagline y si entra los decide una persona)", "");
       for (const p of nuevos.plugins) lineas.push(`- plugin ${p}`);
       for (const s of nuevos.skills) lineas.push(`- skill ${s}`);
       lineas.push("");
-    }
-
-    if (nuevo.kwp === lock.kwp && nuevo.skills === lock.skills) {
-      lineas.push("## Lo que hizo el job", "", "Sin cambios: los dos upstream están en los pines del lock y no toca el árbol ni el lock.");
-      return informe(0);
     }
 
     if (arbolIgual && soloPines) {
