@@ -31,7 +31,7 @@ export async function leerLock(file = LOCK_FILE): Promise<AnthropicLock> {
   return { kwp: lock.kwp, skills: lock.skills };
 }
 
-export interface PluginRow { name: string; category: DirectoryCategory; tags: DirectoryCategory[]; tagline?: string }
+export interface PluginRow { name: string; category: DirectoryCategory; tags: DirectoryCategory[]; tagline?: string; licenses?: readonly string[] }
 export interface SkillRow extends PluginRow { license: "Apache-2.0" }
 
 const p = (name: string, tagline: string, category: DirectoryCategory, ...tags: DirectoryCategory[]): PluginRow => ({ name, category, tags, tagline });
@@ -68,7 +68,8 @@ export const EXCLUDED: Excluded[] = [
 export const SKILLS: SkillRow[] = [
   s("algorithmic-art", "Generative art with p5.js, seeded randomness and live parameters", "design-media", "engineering"),
   s("brand-guidelines", "Apply Anthropic's brand colors and typography to your documents", "design-media", "marketing"),
-  s("canvas-design", "Create posters and visual art as PNG and PDF", "design-media", "marketing"),
+  // Sus fuentes son de 29 familias con la SIL OFL 1.1, además de la Apache-2.0 de la skill (SS9).
+  { ...s("canvas-design", "Create posters and visual art as PNG and PDF", "design-media", "marketing"), licenses: ["OFL-1.1"] },
   s("claude-api", "Reference for building with the Claude API and SDKs", "reference-docs", "engineering"),
   s("discernment-nudge", "Adds follow-up questions that help you check an answer before acting on it", "automation-workflows", "notes-memory"),
   s("docx", "Create, read and edit Word documents", "files-documents", "reference-docs"),
@@ -160,7 +161,8 @@ export async function importAnthropic(o: ImportOptions): Promise<number> {
     const tagline = row.tagline ?? (marketplace.plugins as any[]).find((x) => x.name === row.name)?.["x-nouter"]?.tagline;
     imported.set(row.name, { name: row.name, ...(typeof display === "string" ? { displayName: display } : {}), source: `./plugins/${row.name}`,
       description: manifest.description, version: manifest.version, license: "Apache-2.0", category: row.category, tags: row.tags,
-      author: { name: "Anthropic" }, "x-nouter": { verified: true, ...(tagline ? { tagline } : {}), source: { repo: KWP_REPO, commit: commits.kwp } } });
+      author: { name: "Anthropic" }, "x-nouter": { verified: true, ...(tagline ? { tagline } : {}),
+        ...(row.licenses ? { licenses: row.licenses } : {}), source: { repo: KWP_REPO, commit: commits.kwp } } });
     count++;
   }
   marketplace.plugins = [...(marketplace.plugins as any[]).filter((x) => !imported.has(x.name) && !dropped("plugin").has(x.name)), ...imported.values()];
@@ -179,7 +181,8 @@ export async function importAnthropic(o: ImportOptions): Promise<number> {
     const fm = parseFrontmatter(await readFile(join(from, "SKILL.md"), "utf8"));
     const tagline = row.tagline ?? (dir.items as any[]).find((x) => x.type === "skill" && x.name === row.name)?.tagline;
     skills.push({ type: "skill", name: row.name, path: `skills/${row.name}`, ...(tagline ? { tagline } : {}), description: fm.description, category: row.category, tags: row.tags,
-      author: "Anthropic", license: row.license, verified: true, source: { repo: SKILLS_REPO, commit: commits.skills } });
+      author: "Anthropic", license: row.license, ...(row.licenses ? { licenses: row.licenses } : {}), verified: true,
+      source: { repo: SKILLS_REPO, commit: commits.skills } });
     count++;
   }
   const names = new Set(skills.map((x) => x.name));

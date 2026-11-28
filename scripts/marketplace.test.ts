@@ -134,6 +134,33 @@ test("el name de un plugin es el de su carpeta", async () => {
   await falla([{ ...ok(), source: "./plugins/otro" }], /source/);
 });
 
+// El texto que el CI reconoce como SIL OFL 1.1 (el de cada familia, tal como lo publica el proyecto de la fuente).
+const OFL = "Copyright 2025 The Alpha Project Authors\n\nThis Font Software is licensed under the SIL Open Font License, Version 1.1.\n";
+
+test("la OFL se declara además de la Apache-2.0, solo con fuentes y el texto de cada familia", async () => {
+  const con = async (archivos: Record<string, string>, licenses: unknown = ["OFL-1.1"]) => {
+    const root = await repo([{ ...ok(), "x-nouter": { ...ok()["x-nouter"], licenses } }]);
+    for (const [rel, text] of Object.entries(archivos)) {
+      await mkdir(join(root, "plugins/sales/fonts"), { recursive: true });
+      await writeFile(join(root, "plugins/sales/fonts", rel), text);
+    }
+    return root;
+  };
+  const dosFamilias = { "Alpha-Regular.ttf": "", "Alpha-Bold.ttf": "", "Alpha-OFL.txt": OFL, "Beta-Italic.otf": "", "Beta-OFL.txt": OFL };
+  assert.deepEqual(await marketplaceErrors(await con(dosFamilias)), [], "dos familias, cada una con su texto");
+  // Falta el texto de una familia.
+  const { "Beta-OFL.txt": _sinTexto, ...sinBeta } = dosFamilias;
+  assert.match((await marketplaceErrors(await con(sinBeta))).join(" | "), /Beta[^|]*OFL|OFL[^|]*Beta/);
+  // Un valor fuera de la lista cerrada.
+  assert.match((await marketplaceErrors(await con(dosFamilias, ["CC-BY-4.0"]))).join(" | "), /licenses/);
+  // Solo la OFL de las fuentes, sin ninguna fuente.
+  assert.match((await marketplaceErrors(await con({}))).join(" | "), /licenses[^|]*fuente|fuente/i);
+  // Un *-OFL.txt que no trae el texto de la OFL.
+  assert.match((await marketplaceErrors(await con({ "Alpha-Regular.ttf": "", "Alpha-OFL.txt": "All rights reserved." }))).join(" | "), /OFL/);
+  // x-nouter sigue con sus claves cerradas.
+  await falla([{ ...ok(), "x-nouter": { ...ok()["x-nouter"], licenses: ["OFL-1.1"], extra: 1 } }], /x-nouter/);
+});
+
 test("x-nouter.tagline es opcional y de hasta 100 caracteres", async () => {
   assert.deepEqual(await marketplaceErrors(await repo([{ ...ok(), "x-nouter": { ...ok()["x-nouter"], tagline: "Prep calls" } }])), []);
   await falla([{ ...ok(), "x-nouter": { ...ok()["x-nouter"], tagline: "x".repeat(101) } }], /tagline/);

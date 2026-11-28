@@ -150,6 +150,20 @@ test("importAnthropic copia lo libre, completa la licencia, omite lo que no la t
   assert.deepEqual(await validateRepo(out), []);
 });
 
+test("licenses va a x-nouter en el plugin y a la raíz del item en la skill; sin licenses no deja la clave", async () => {
+  const fx = await anthropicFixtures();
+  const conLicencias = { plugins: [{ ...TABLAS.plugins[0], licenses: ["OFL-1.1"] }], skills: [{ ...TABLAS.skills[0], licenses: ["OFL-1.1"] }] };
+  const out = await destino();
+  await importAnthropic({ kwp: fx.kwp, skills: fx.skills, out, commits: COMMITS, tables: conLicencias });
+  assert.deepEqual((await json(join(out, MARKETPLACE))).plugins.find((p: any) => p.name === "sales")["x-nouter"].licenses, ["OFL-1.1"]);
+  assert.deepEqual((await json(join(out, ITEMS))).items[0].licenses, ["OFL-1.1"]);
+
+  const sin = await destino();
+  await importAnthropic({ kwp: fx.kwp, skills: fx.skills, out: sin, commits: COMMITS, tables: TABLAS });
+  assert.ok(!("licenses" in (await json(join(sin, MARKETPLACE))).plugins.find((p: any) => p.name === "sales")["x-nouter"]));
+  assert.ok(!("licenses" in (await json(join(sin, ITEMS))).items[0]));
+});
+
 test("correrlo dos veces no duplica nada", async () => {
   const out = await destino();
   const fx = await anthropicFixtures();

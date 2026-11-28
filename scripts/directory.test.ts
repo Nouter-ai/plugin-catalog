@@ -124,6 +124,23 @@ test("el tagline de un item es opcional y de hasta 100 caracteres; si falta sale
   assert.equal(idx.entries.find((e) => e.id === "skill:skill-creator")!.tagline, "Make skills");
 });
 
+const OFL = "Copyright 2025 The Alpha Project Authors\n\nThis Font Software is licensed under the SIL Open Font License, Version 1.1.\n";
+
+test("un item suelto declara licenses junto a su licencia, y el índice no lleva licenses", async () => {
+  const conFuentes = (r: string) => (async () => {
+    await mkdir(join(r, "skills/skill-creator/canvas-fonts"), { recursive: true });
+    await writeFile(join(r, "skills/skill-creator/canvas-fonts/Alpha-Regular.ttf"), "");
+    await writeFile(join(r, "skills/skill-creator/canvas-fonts/Alpha-OFL.txt"), OFL);
+  })();
+  const root = await conItems([{ ...item(), licenses: ["OFL-1.1"] }], conFuentes);
+  assert.deepEqual(await validateRepo(root), []);
+  const idx = await buildDirectory(root, "v1", () => "x");
+  const s = idx.entries.find((e) => e.id === "skill:skill-creator")!;
+  assert.ok(!("licenses" in s), "el índice lleva una sola licencia: las claves del plano de control no cambian");
+  // La regla de las fuentes también vale en un item: sin fuentes no hay OFL.
+  await falla(await conItems([{ ...item(), licenses: ["OFL-1.1"] }]), /licenses|fuente/i);
+});
+
 test("un SKILL.md idéntico en dos plugins (o en un plugin y una skill suelta) falla: el OS guarda una sola copia y un plugin llegaría sin esa skill", async () => {
   const root = await baseRepo();
   assert.deepEqual(await duplicateSkillErrors(root), []);

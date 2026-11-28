@@ -8,6 +8,8 @@ import { CATEGORIES } from "./categories.ts";
 import { FLAGS } from "./flags.ts";
 
 export const LICENSES = ["Apache-2.0", "MIT", "BSD-2-Clause", "BSD-3-Clause", "ISC"] as const;
+// Las que se suman a la del item y valen solo para archivos de fuente (hoy la de las fuentes de canvas-design).
+export const LICENCIAS_EXTRA = ["OFL-1.1"] as const;
 
 // Reconoce la licencia de un texto, solo entre las libres que acepta el Directory.
 export function licenseOf(text: string): string | null {
@@ -35,13 +37,68 @@ async function licenseTexts(dir: string): Promise<string[]> {
   return out;
 }
 
-// La licencia declarada tiene que ser una de las libres, con su texto en la carpeta del item.
-export async function licenseErrors(at: string, license: unknown, dir: string): Promise<string[]> {
-  if (typeof license !== "string" || !(LICENSES as readonly string[]).includes(license)) {
-    return [`${at}.license: la licencia tiene que ser una libre (${LICENSES.join(", ")})`];
+// La SIL OFL 1.1, que el CI reconoce para aceptar el texto de cada familia de fuentes.
+export const isOflText = (text: string): boolean => /SIL OPEN FONT LICENSE,? (Version )?1\.1/i.test(text.replace(/\s+/g, " "));
+
+const FUENTE = /\.(?:ttf|otf|woff2?)$/i;
+const ARCHIVO_OFL = /-OFL\.txt$/i;
+const carpeta = (dir: string) => dir.split("/").slice(-2).join("/");
+
+async function archivosEn(dir: string): Promise<string[]> {
+  const out: string[] = [];
+  for (const e of await readdir(dir, { withFileTypes: true }).catch(() => [])) {
+    const p = join(dir, e.name);
+    if (e.isDirectory()) out.push(...await archivosEn(p));
+    else out.push(p);
   }
-  const found = (await licenseTexts(dir)).map(licenseOf);
-  return found.includes(license) ? [] : [`${at}.license: falta el archivo de licencia ${license} (LICENSE* o LICENSES/) en ${dir.split("/").slice(-2).join("/")}`];
+  return out;
+}
+
+// Las familias de las fuentes de una carpeta (recorre las subcarpetas): `InstrumentSerif-BoldItalic.ttf` es InstrumentSerif.
+export async function familiasDeFuentes(dir: string): Promise<string[]> {
+  const familias = new Set<string>();
+  for (const f of await archivosEn(dir)) {
+    if (!FUENTE.test(f)) continue;
+    familias.add(f.split("/").pop()!.replace(FUENTE, "").split("-")[0]);
+  }
+  return [...familias].toSorted();
+}
+
+// La OFL exige fuentes en la carpeta y el texto de la SIL OFL 1.1 por familia (`<Familia>-OFL.txt`), y ningún `*-OFL.txt` sin él.
+async function oflErrors(at: string, dir: string): Promise<string[]> {
+  const archivos = await archivosEn(dir);
+  const familias = await familiasDeFuentes(dir);
+  if (!familias.length) return [`${at}.licenses: OFL-1.1 es para archivos de fuente y en ${carpeta(dir)} no hay ninguno (.ttf, .otf, .woff, .woff2)`];
+  const textos = archivos.filter((f) => ARCHIVO_OFL.test(f));
+  const errors: string[] = [];
+  for (const familia of familias) {
+    if (!textos.some((t) => t.split("/").pop() === `${familia}-OFL.txt`)) {
+      errors.push(`${at}.licenses: falta el texto OFL de la familia ${familia} (${familia}-OFL.txt) en ${carpeta(dir)}`);
+    }
+  }
+  for (const t of textos) {
+    if (!isOflText(await readFile(t, "utf8").catch(() => ""))) errors.push(`${at}.licenses: ${t.split("/").pop()} no trae el texto de la SIL OFL 1.1`);
+  }
+  return errors;
+}
+
+// La licencia declarada tiene que ser una de las libres, con su texto en la carpeta del item; `licenses` son las adicionales
+// (hoy solo la OFL, que además exige sus fuentes y el texto de cada familia).
+export async function licenseErrors(at: string, license: unknown, licenses: unknown, dir: string): Promise<string[]> {
+  const errors: string[] = [];
+  if (typeof license !== "string" || !(LICENSES as readonly string[]).includes(license)) {
+    errors.push(`${at}.license: la licencia tiene que ser una libre (${LICENSES.join(", ")})`);
+  } else {
+    const found = (await licenseTexts(dir)).map(licenseOf);
+    if (!found.includes(license)) errors.push(`${at}.license: falta el archivo de licencia ${license} (LICENSE* o LICENSES/) en ${carpeta(dir)}`);
+  }
+  if (licenses !== undefined) {
+    const extra = Array.isArray(licenses) && licenses.length > 0 && licenses.every((l) => (LICENCIAS_EXTRA as readonly unknown[]).includes(l))
+      && new Set(licenses).size === licenses.length && !(licenses as unknown[]).includes(license);
+    if (!extra) errors.push(`${at}.licenses: las adicionales son de la lista (${LICENCIAS_EXTRA.join(", ")}), una vez cada una y distintas de license`);
+    else if ((licenses as string[]).includes("OFL-1.1")) errors.push(...await oflErrors(at, dir));
+  }
+  return errors;
 }
 
 // category, tags, author, verified, flag y source de un plugin o de un item suelto. `author` es un texto en los items y { name } en los plugins.
@@ -129,13 +186,13 @@ export async function marketplaceErrors(root: string): Promise<string[]> {
     }
     const author = isObj(p.author) ? p.author.name : undefined;
     const x = p["x-nouter"];
-    if (!isObj(x) || Object.keys(x).some((k) => !["verified", "flag", "source", "tagline"].includes(k))) {
-      errors.push(`${at}: x-nouter tiene que ser { verified, flag?, source?, tagline? } sin otras claves`);
+    if (!isObj(x) || Object.keys(x).some((k) => !["verified", "flag", "source", "tagline", "licenses"].includes(k))) {
+      errors.push(`${at}: x-nouter tiene que ser { verified, flag?, source?, tagline?, licenses? } sin otras claves`);
     }
     if (isObj(x) && x.tagline !== undefined && !str(x.tagline, 1, 100)) errors.push(`${at}: x-nouter.tagline de 1 a 100 caracteres`);
     errors.push(...metaErrors(at, { category: p.category, tags: p.tags ?? [], author, flag: isObj(x) ? x.flag : undefined,
       verified: isObj(x) ? x.verified : undefined, source: isObj(x) ? x.source : undefined, where: "x-nouter" }));
-    errors.push(...await licenseErrors(at, p.license, dir));
+    errors.push(...await licenseErrors(at, p.license, isObj(x) ? x.licenses : undefined, dir));
     if (existsSync(join(dir, "hooks/hooks.json"))) errors.push(`${at}: hooks/hooks.json: los hooks no entran al Directory`);
     if (existsSync(join(dir, "bin"))) errors.push(`${at}: bin/: los ejecutables no entran al Directory`);
     const mcp = await readFile(join(dir, ".mcp.json"), "utf8").then((t) => JSON.parse(t) as unknown, () => undefined);
