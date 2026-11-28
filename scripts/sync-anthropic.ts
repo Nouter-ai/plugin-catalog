@@ -103,8 +103,16 @@ async function loNuevo(fx: { kwp: string; skills: string }, tables: { plugins: P
 async function preflight(fx: { kwp: string; skills: string }, tables: { plugins: PluginRow[]; skills: SkillRow[] }): Promise<string[]> {
   const problemas: string[] = [];
   for (const row of tables.plugins) {
-    if (!existsSync(join(fx.kwp, row.name, ".claude-plugin/plugin.json"))) {
+    const from = join(fx.kwp, row.name);
+    if (!existsSync(join(from, ".claude-plugin/plugin.json"))) {
       problemas.push(`${KWP_REPO}: no hay un plugin ${row.name} (falta ${row.name}/.claude-plugin/plugin.json). Si se fue del upstream, lo decide una persona: sale de la tabla o vuelve a entrar.`);
+      continue;
+    }
+    // La licencia efectiva es la que trae el plugin o, si no trae, la del root (lo mismo que copia el importador).
+    const propia = (await readdir(from).catch(() => [] as string[])).find((f) => /^LICENSE/i.test(f));
+    const lic = licenseOf(await readFile(propia ? join(from, propia) : join(fx.kwp, "LICENSE"), "utf8").catch(() => ""));
+    if (lic !== "Apache-2.0") {
+      problemas.push(`${KWP_REPO}: el plugin ${row.name} ya no trae Apache-2.0 (${lic ?? "sin licencia"}): no se copia nada con otra licencia sin que una persona lo decida.`);
     }
   }
   for (const row of tables.skills) {

@@ -118,6 +118,15 @@ test("un clon que ya existe se trae el tip de la rama por defecto: nunca se qued
   await assert.rejects(actualizarClon(`file://${origen}`, destino, "0".repeat(40)), /0{40}|remote ref/i);
 });
 
+test("un plugin que cambia de licencia frena cerrado: sale 1, sin PR y sin escribir", async () => {
+  const { out, lock, sync, reporte } = await armado(async (fx) => { await writeFile(join(fx.kwp, "sales/LICENSE"), MIT); });
+  const mapa = await readFile(join(out, ".claude-plugin/marketplace.json"), "utf8");
+  assert.equal(await sync(), 1);
+  assert.deepEqual(JSON.parse(await readFile(lock, "utf8")), VIEJO);
+  assert.equal(await readFile(join(out, ".claude-plugin/marketplace.json"), "utf8"), mapa);
+  assert.match(await reporte(), /sales[^\n]*licencia|licencia[^\n]*sales/i);
+});
+
 test("un pin que el upstream no tiene sale 1 con el SHA y no escribe", async () => {
   const { lock, sync, reporte } = await armado();
   const roto = async () => { throw new Error(`fatal: couldn't find remote ref ${VIEJO.kwp}`); };
