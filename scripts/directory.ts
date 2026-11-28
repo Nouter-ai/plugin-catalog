@@ -31,7 +31,7 @@ const ITEM_TYPES = ["skill", "blueprint"];
 const ITEM_FILE: Record<string, string> = { skill: "SKILL.md", blueprint: "blueprint.json" };
 
 interface Item { type: "skill" | "blueprint"; name: string; path: string; tagline?: string; description: string; category: DirectoryCategory; tags: DirectoryCategory[];
-  author: string; license: string; verified: boolean; flag?: string; source?: { repo: string; commit: string } }
+  author: string; license: string; licenses?: string[]; verified: boolean; flag?: string; source?: { repo: string; commit: string } }
 
 async function readItems(root: string): Promise<unknown[] | string> {
   try {
@@ -49,7 +49,7 @@ export async function directoryItemsErrors(root: string): Promise<string[]> {
   for (const [i, it] of items.entries()) {
     if (!isObj(it)) { errors.push(`items[${i}]: tiene que ser un objeto`); continue; }
     const at = `item ${typeof it.name === "string" ? it.name : i}`;
-    const known = ["type", "name", "path", "tagline", "description", "category", "tags", "author", "license", "verified", "flag", "source"];
+    const known = ["type", "name", "path", "tagline", "description", "category", "tags", "author", "license", "licenses", "verified", "flag", "source"];
     for (const k of Object.keys(it)) if (!known.includes(k)) errors.push(`${at}: clave desconocida ${k}`);
     if (!ITEM_TYPES.includes(it.type as string)) { errors.push(`${at}.type: skill o blueprint (tipo)`); continue; }
     if (typeof it.name !== "string" || !SLUG.test(it.name)) errors.push(`${at}.name: slug en minúsculas, letras, números y guiones`);
@@ -71,7 +71,8 @@ export async function directoryItemsErrors(root: string): Promise<string[]> {
       } catch (e) { errors.push(`${at}: SKILL.md: ${(e as Error).message} (frontmatter)`); }
     }
     errors.push(...metaErrors(at, { category: it.category, tags: it.tags ?? [], author: it.author, flag: it.flag, verified: it.verified, source: it.source, where: "item" }));
-    errors.push(...await licenseErrors(at, it.license, dir));
+    // `licenses` se valida acá y no viaja al índice: el plano de control sigue con una licencia por entrada.
+    errors.push(...await licenseErrors(at, it.license, it.licenses, dir));
   }
   return errors;
 }

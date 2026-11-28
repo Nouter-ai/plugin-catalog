@@ -48,6 +48,9 @@
       ],
       "author": "Anthropic",
       "license": "Apache-2.0",
+      "licenses": [
+        "OFL-1.1"
+      ],
       "verified": true,
       "source": {
         "repo": "anthropics/skills",

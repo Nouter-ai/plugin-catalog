@@ -28,6 +28,30 @@ const w = async (root: string, rel: string, text: string) => { await mkdir(join(
 
 // Los dos repos de Anthropic en miniatura, armados en un temporal: dentro del repo, un plugin.json o un SKILL.md llegarían a cada
 // tenant (el CI lo rechaza). sales trae stdio y http, engineering no trae .mcp.json y local trae solo stdio; alpha trae licencia y beta no.
+// El upstream de Anthropic en miniatura con todo lo que las tablas esperan (un plugin por nombre con su plugin.json y su
+// LICENSE Apache, una skill por nombre con SKILL.md y LICENSE.txt) y lo que nunca entra: un partner-built y un plugin de
+// fuente externa. Los tests lo mutan entre dos corridas para simular un upstream que se movió. `dir` es el `--clones` del job.
+export async function anthropicUpstream(names: { plugins: string[]; skills: string[] }): Promise<{ dir: string; kwp: string; skills: string }> {
+  const dir = await mkdtemp(join(tmpdir(), "anthropic-upstream-"));
+  const kwp = join(dir, "kwp"), skills = join(dir, "skills");
+  const apache = await readFile(join(realRoot, "LICENSE"), "utf8");
+  await w(kwp, "LICENSE", apache);
+  await w(kwp, ".claude-plugin/marketplace.json", JSON.stringify({ name: "knowledge-work-plugins", owner: { name: "Anthropic" }, plugins: [
+    ...names.plugins.map((name) => ({ name, source: `./${name}`, description: `The ${name} plugin.` })),
+    { name: "slack-by-salesforce", source: "./partner-built/slack", description: "De partner-built." },
+    { name: "tavily", source: { source: "url", url: "https://github.com/tavily-ai/skills.git" }, description: "De afuera." },
+  ] }));
+  for (const name of names.plugins) {
+    await w(kwp, `${name}/.claude-plugin/plugin.json`, JSON.stringify({ name, version: "1.0.0", description: `The ${name} plugin.`, author: { name: "Anthropic" } }));
+    await w(kwp, `${name}/LICENSE`, apache);
+  }
+  for (const name of names.skills) {
+    await w(skills, `skills/${name}/SKILL.md`, `---\nname: ${name}\ndescription: The ${name} skill.\n---\n`);
+    await w(skills, `skills/${name}/LICENSE.txt`, apache);
+  }
+  return { dir, kwp, skills };
+}
+
 export async function anthropicFixtures(): Promise<{ kwp: string; skills: string }> {
   const dir = await mkdtemp(join(tmpdir(), "anthropic-"));
   const kwp = join(dir, "kwp"), skills = join(dir, "skills");
